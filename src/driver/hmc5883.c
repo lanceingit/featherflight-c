@@ -1,0 +1,93 @@
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "i2c.h"
+#include "hmc5883.h"
+
+
+#define MAG_ADDRESS 0x1E
+#define MAG_DATA_REGISTER 0x03
+#define HMC58X3_R_CONFA 0
+#define HMC58X3_R_CONFB 1
+#define HMC58X3_R_MODE 2
+#define HMC58X3_X_SELF_TEST_GAUSS (+1.16f)       // X axis level when bias current is applied.
+#define HMC58X3_Y_SELF_TEST_GAUSS (+1.16f)       // Y axis level when bias current is applied.
+#define HMC58X3_Z_SELF_TEST_GAUSS (+1.08f)       // Z axis level when bias current is applied.
+#define SELF_TEST_LOW_LIMIT  (243.0f / 390.0f)    // Low limit when gain is 5.
+#define SELF_TEST_HIGH_LIMIT (575.0f / 390.0f)    // High limit when gain is 5.
+#define HMC_POS_BIAS 1
+#define HMC_NEG_BIAS 2
+
+static float mag[3];
+
+
+
+bool hmc5883_init(void)
+{
+    bool ack = false;
+    uint8_t sig = 0;
+
+    ack = i2c_read(MAG_ADDRESS, 0x0A, 1, &sig);
+    if (!ack || sig != 'H')
+        return false;
+    
+    
+    i2c_write(MAG_ADDRESS, HMC58X3_R_CONFB, (3 << 5));
+    i2c_write(MAG_ADDRESS, HMC58X3_R_MODE, 0x00);
+    
+    return true;
+   
+}
+
+void hmc5883_read(void)
+{
+    uint8_t buf[6];
+
+    bool ack = i2c_read(MAG_ADDRESS, MAG_DATA_REGISTER, 6, buf);
+    if (!ack) {
+        return ;
+    }
+    // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
+    // After calibration is done, magGain is set to calculated gain values.
+    mag[0] = (int16_t)(buf[0] << 8 | buf[1]) * (1.0f / 660.0f);
+    mag[1] = (int16_t)(buf[2] << 8 | buf[3]) * (1.0f / 660.0f);
+    mag[2] = (int16_t)(buf[4] << 8 | buf[5]) * (1.0f / 660.0f);
+
+}
+
+float hmc5883_get_mag_x()
+{
+	return mag[0];
+}
+
+float hmc5883_get_mag_y()
+{
+	return mag[1];
+}
+
+float hmc5883_get_mag_z()
+{
+	return mag[2];
+}
+
+void hmc5883_set_mag(float *m)
+{
+	mag[0] = m[0];
+	mag[1] = m[1];
+	mag[2] = m[2];
+}
+
+void hmc5883_set_mag_x(float m)
+{
+	mag[0] = m;
+}
+
+void hmc5883_set_mag_y(float m)
+{
+	mag[1] = m;
+}
+
+void hmc5883_set_mag_z(float m)
+{
+	mag[2] = m;
+}

@@ -18,19 +18,19 @@ typedef struct flashGeometry_s {
 bool spi_flash_init(void);
 
 bool spi_flash_eraseSector(uint32_t address);
-bool spi_flash_eraseCompletely();
+bool spi_flash_eraseCompletely(void);
 
 bool spi_flash_pageProgram(uint32_t address, const uint8_t *data, int length);
 
 bool spi_flash_pageProgramBegin(uint32_t address);
 bool spi_flash_pageProgramContinue(const uint8_t *data, int length);
-void spi_flash_pageProgramFinish();
+void spi_flash_pageProgramFinish(void);
 
 int spi_flash_readBytes(uint32_t address, uint8_t *buffer, int length);
 
-bool spi_flash_isReady();
+bool spi_flash_isReady(void);
 bool spi_flash_waitForReady(uint32_t timeoutMillis);
 
-const flashGeometry_t* spi_flash_getGeometry();
+const flashGeometry_t* spi_flash_getGeometry(void);
 
 

@@ -4,15 +4,9 @@
 #include <cmath>
 #include <string>
 
-#include "copter.h"
-//#include "eprintf.h"
 
-//using namespace matrix;
-using math::Vector;
-using math::Matrix;
-using math::Quaternion;
 
-extern COPTER copter;
+
 
 #if 0
 #define LINK_DEBUG(a) _link->send_text(a)
@@ -43,263 +37,103 @@ Att_Est_Q::Att_Est_Q(SENSORS* sensor) :
 }
 
 
-Att_Est_Q::~Att_Est_Q()
+static float att_r[3][3];
+static float q[4];
+
+
+static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
+                                	      float ax, float ay, float az,
+                                bool useMag, float mx, float my, float mz)
 {
-}
+    static float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;    // integral error terms scaled by Ki
 
-bool Att_Est_Q::init()
-{
-	//char buf[100];
+    // Calculate general spin rate (rad/s)
+    float spin_rate = sqrtf(sq(gx) + sq(gy) + sq(gz));
 
-	_accel.data[0] = _sensors->inertialSensor->get_acc_x();
-	_accel.data[1] = _sensors->inertialSensor->get_acc_y();
-	_accel.data[2] = _sensors->inertialSensor->get_acc_z();
+    float ex = 0, ey = 0, ez = 0;
 
+    // Use measured magnetic field vector
+    float recipMagNorm = sq(mx) + sq(my) + sq(mz);
+    if (useMag && recipMagNorm > 0.01f) {
+        // Normalise magnetometer measurement
+        recipMagNorm = invSqrt(recipMagNorm);
+        mx *= recipMagNorm;
+        my *= recipMagNorm;
+        mz *= recipMagNorm;
 
-	// Rotation matrix can be easily constructed from acceleration and mag field vectors
-	// 'k' is Earth Z axis (Down) unit vector in body frame
-	Vector<3> k = -_accel;
-	k.normalize();
+        // For magnetometer correction we make an assumption that magnetic field is perpendicular to gravity (ignore Z-component in EF).
+        // This way magnetic field will only affect heading and wont mess roll/pitch angles
 
-	if (_accel.length() < 0.01f || _accel.length() > 12) {
-		LINK_DEBUG("init: degenerate accel!");
-	}
+        // (hx; hy; 0) - measured mag field vector in EF (assuming Z-component is zero)
+        // (bx; 0; 0) - reference mag field vector heading due North in EF (assuming Z-component is zero)
+        float hx = att_r[0][0] * mx + att_r[0][1] * my + att_r[0][2] * mz;
+        float hy = att_r[1][0] * mx + att_r[1][1] * my + att_r[1][2] * mz;
+        float bx = sqrtf(hx * hx + hy * hy);
 
-	// 'i' is Earth X axis (North) unit vector in body frame, orthogonal with 'k'
-    Vector<3> i = {1, 0 ,0};
+        // magnetometer error is cross product between estimated magnetic north and measured magnetic north (calculated in EF)
+        float ez_ef = -(hy * bx);
 
-	if(_use_compass)
-    {
-        _mag.data[0] = _sensors->compass->get_mag_x();
-        _mag.data[1] = _sensors->compass->get_mag_y();
-        _mag.data[2] = _sensors->compass->get_mag_z();
-        //esprintf(buf, "mag0:%.3f 1:%.3f 2:%.3f", (double)_mag(0),(double)_mag(1),(double)_mag(2));
-        LINK_DEBUG(buf);
-        if (_mag.length() < 0.01f) {
-            LINK_DEBUG("init: degenerate mag!");
-        }
-        
-        i = (_mag - k * (_mag * k));
-        i.normalize();        
+        // Rotate mag error vector back to BF and accumulate
+        ex += att_r[2][0] * ez_ef;
+        ey += att_r[2][1] * ez_ef;
+        ez += att_r[2][2] * ez_ef;
     }
-    
 
+    // Use measured acceleration vector
+    float recipAccNorm = sq(ax) + sq(ay) + sq(az);
+    if (recipAccNorm > 0.01f) {
+        // Normalise accelerometer measurement
+        recipAccNorm = invSqrt(recipAccNorm);
+        ax *= recipAccNorm;
+        ay *= recipAccNorm;
+        az *= recipAccNorm;
 
-	// 'j' is Earth Y axis (East) unit vector in body frame, orthogonal with 'k' and 'i'
-	Vector<3> j = k % i;
+        // Error is sum of cross product between estimated direction and measured direction of gravity
+        ex += (ay * att_r[2][2] - az * att_r[2][1]);
+        ey += (az * att_r[2][0] - ax * att_r[2][2]);
+        ez += (ax * att_r[2][1] - ay * att_r[2][0]);
+    }
 
-	// Fill rotation matrix
-	Matrix<3, 3> R;
-	R.set_row(0, i);
-	R.set_row(1, j);
-	R.set_row(2, k);
+    // Compute and apply integral feedback if enabled
+    if (imuRuntimeConfig.dcm_ki > 0.0f) {
+        // Stop integrating if spinning beyond the certain limit
+        if (spin_rate < DEGREES_TO_RADIANS(SPIN_RATE_LIMIT)) {
+            const float dcmKiGain = imuRuntimeConfig.dcm_ki;
+            integralFBx += dcmKiGain * ex * dt;    // integral error scaled by Ki
+            integralFBy += dcmKiGain * ey * dt;
+            integralFBz += dcmKiGain * ez * dt;
+        }
+    } else {
+        integralFBx = 0.0f;    // prevent integral windup
+        integralFBy = 0.0f;
+        integralFBz = 0.0f;
+    }
 
-	// Convert to quaternion
-	_q.from_dcm(R);
+    // Apply proportional and integral feedback
+    gx += dcmKpGain * ex + integralFBx;
+    gy += dcmKpGain * ey + integralFBy;
+    gz += dcmKpGain * ez + integralFBz;
 
-	// Compensate for magnetic declination
-	Quaternion decl_rotation;
-	decl_rotation.from_yaw(_mag_decl);
-	_q = decl_rotation * _q;
+    // Integrate rate of change of quaternion
+    gx *= (0.5f * dt);
+    gy *= (0.5f * dt);
+    gz *= (0.5f * dt);
 
-	_q.normalize();
+    quaternion buffer;
+    buffer.w = q.w;
+    buffer.x = q.x;
+    buffer.y = q.y;
+    buffer.z = q.z;
 
-	if (std::isfinite(_q(0)) && std::isfinite(_q(1)) &&
-			std::isfinite(_q(2)) && std::isfinite(_q(3)) &&
-	    _q.length() > 0.95f && _q.length() < 1.05f) {
+    q.w += (-buffer.x * gx - buffer.y * gy - buffer.z * gz);
+    q.x += (+buffer.w * gx + buffer.y * gz - buffer.z * gy);
+    q.y += (+buffer.w * gy - buffer.x * gz + buffer.z * gx);
+    q.z += (+buffer.w * gz + buffer.x * gy - buffer.y * gx);
 
-		_inited = true;
-	}
-	else
-	{
-		_inited = false;
-		LINK_DEBUG("q init definite");
-	}
-
-	return _inited;
+    // Normalise quaternion
+    float recipNorm = invSqrt(sq(q.w) + sq(q.x) + sq(q.y) + sq(q.z));
+    q.w *= recipNorm;
+    q.x *= recipNorm;
+    q.y *= recipNorm;
+    q.z *= recipNorm;
 }
-
-void Att_Est_Q::run()
-{
-	if(_sensors->inertialSensor->ready())
-	{
-//		_gyro.data[0] = _sensors->inertialSensor->get_gyro_x();
-//		_gyro.data[1] = _sensors->inertialSensor->get_gyro_y();
-//		_gyro.data[2] = _sensors->inertialSensor->get_gyro_z();
-		_gyro.data[0] = _lp_gyro_x.apply(_sensors->inertialSensor->get_gyro_x());
-		_gyro.data[1] = _lp_gyro_y.apply(_sensors->inertialSensor->get_gyro_y());
-		_gyro.data[2] = _lp_gyro_z.apply(_sensors->inertialSensor->get_gyro_z());
-
-//		_accel.data[0] = _sensors->inertialSensor->get_acc_x();
-//		_accel.data[1] = _sensors->inertialSensor->get_acc_y();
-//		_accel.data[2] = _sensors->inertialSensor->get_acc_z();
-		_accel.data[0] = _lp_accel_x.apply(_sensors->inertialSensor->get_acc_x());
-		_accel.data[1] = _lp_accel_y.apply(_sensors->inertialSensor->get_acc_y());
-		_accel.data[2] = _lp_accel_z.apply(_sensors->inertialSensor->get_acc_z());
-
-		if (_accel.length() < 0.01f) {
-			LINK_DEBUG("WARNING: degenerate accel!");
-			return;
-		}
-	}
-	else
-	{
-		return;
-	}
-
-
-	if(_use_compass)
-	{
-		_mag.data[0] = _sensors->compass->get_mag_x();
-		_mag.data[1] = _sensors->compass->get_mag_y();
-		_mag.data[2] = _sensors->compass->get_mag_z();
-
-		if (_mag.length() < 0.01f) {
-			//PX4_DEBUG("WARNING: degenerate mag!");
-			LINK_DEBUG("WARNING: degenerate mag!");
-			return;
-		}
-
-//		if (_mag_decl_auto && _sensors.gps.eph < 20.0f) {
-//			/* set magnetic declination automatically */
-//			//update_mag_declination(math::radians(get_mag_declination(_sensors.gps.lat, _sensors.gps.lon)));
-//		}
-	}
-
-	/* time from previous iteration */
-	uint64_t now = Timer_getTime();
-	float dt = (_last_time > 0) ? ((now  - _last_time) / 1000000.0f) : 0.00001f;
-	_last_time = now;
-
-	if (dt > _dt_max) {
-		dt = _dt_max;
-	}
-
-	if (!update(dt)) {
-//		LINK_DEBUG("att update error");
-		return;
-	}
-//	else
-//	{
-//		LINK_DEBUG("att update");
-//	}
-
-	{
-		Vector<3> euler = _q.to_euler();
-		//matrix::Eulerf euler = matrix::Quatf(_q);
-
-		_roll_rate = _rates(0);
-		_pitch_rate = _rates(1);
-		_yaw_rate = _rates(2);
-
-	    _roll = euler(0);
-	    _pitch = euler(1);
-	    _yaw = euler(2);
-
-//	    esprintf(buf, "r:%.2f p:%.2f y:%.2f", (double)_roll, (double)_pitch, (double)_yaw);
-//	    LINK_DEBUG(buf);
-	}
-
-}
-
-
-void Att_Est_Q::update_mag_declination(float new_declination)
-{
-	// Apply initial declination or trivial rotations without changing estimation
-	if (fabsf(new_declination - _mag_decl) < 0.0001f) {
-		_mag_decl = new_declination;
-
-	} else {
-		// Immediately rotate current estimation to avoid gyro bias growth
-		Quaternion decl_rotation;
-		decl_rotation.from_yaw(new_declination - _mag_decl);
-		_q = decl_rotation * _q;
-		_mag_decl = new_declination;
-	}
-}
-
-
-bool Att_Est_Q::update(float dt)
-{
-    
-    
-	if (!_inited) {
-
-		return init();
-	}
-
-	Quaternion q_last = _q;
-
-	// Angular rate of correction
-	Vector<3> corr;
-	float spinRate = _gyro.length();
-
-	if (_use_compass) {
-		// Magnetometer correction
-		// Project mag field vector to global frame and extract XY component
-		Vector<3> mag_earth = _q.conjugate(_mag);
-		float mag_err = _wrap_pi(atan2f(mag_earth(1), mag_earth(0)) - _mag_decl);
-//		float gainMult = 1.0f;
-//		const float fifty_dps = 0.873f;
-//
-//		if (spinRate > fifty_dps) {
-//			gainMult = math::min(spinRate / fifty_dps, 10.0f);
-//		}
-
-		// Project magnetometer correction to body frame
-		corr += _q.conjugate_inversed(Vector<3>(0.0f, 0.0f, -mag_err)) * _w_mag;
-	}
-
-	_q.normalize();
-
-
-	// Accelerometer correction
-	// Project 'k' unit vector of earth frame to body frame
-	// Vector<3> k = _q.conjugate_inversed(Vector<3>(0.0f, 0.0f, 1.0f));
-	// Optimized version with dropped zeros
-	Vector<3> k(
-		2.0f * (_q(1) * _q(3) - _q(0) * _q(2)),
-		2.0f * (_q(2) * _q(3) + _q(0) * _q(1)),
-		(_q(0) * _q(0) - _q(1) * _q(1) - _q(2) * _q(2) + _q(3) * _q(3))
-	);
-
-
-
-	corr += (k % _accel.normalized()) * _w_accel;
-	//_corr_acc = corr;
-
-	// Gyro bias estimation
-	if (spinRate < 0.175f) {
-		_gyro_bias += corr * (_w_gyro_bias * dt);
-
-		for (int i = 0; i < 3; i++) {
-			_gyro_bias(i) = math::constrain(_gyro_bias(i), -_bias_max, _bias_max);
-		}
-
-	}
-
-	_rates = _gyro + _gyro_bias;
-
-	// Feed forward gyro
-	corr += _rates;
-	//_corr_all = corr;
-
-	// Apply correction to state
-	_q += _q.derivative(corr) * dt;
-
-	// Normalize quaternion
-	_q.normalize();
-
-	if (!(std::isfinite(_q(0)) && std::isfinite(_q(1)) &&
-			std::isfinite(_q(2)) && std::isfinite(_q(3)))) {
-		// Reset quaternion to last good state
-		_q = q_last;
-		_rates.zero();
-		_gyro_bias.zero();
-		LINK_DEBUG("q definite");
-		return false;
-	}
-
-	return true;
-}
-

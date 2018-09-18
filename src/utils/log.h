@@ -16,5 +16,5 @@ void log_write_sens(uint16_t rate);
 uint32_t log_get_size(void);
 
 void log_stop(void);
-bool log_need_recordvoid();
+bool log_need_recordvoid(void);
 

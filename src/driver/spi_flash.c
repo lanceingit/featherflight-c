@@ -52,9 +52,9 @@ static flashGeometry_t geometry;
 static bool couldBeBusy=false;
 
 static bool spi_flash_performOneByteCommand(uint8_t command);
-static bool spi_flash_writeEnable();
-static uint8_t spi_flash_readStatus();
-static bool spi_flash_readIdentification();
+static bool spi_flash_writeEnable(void);
+static uint8_t spi_flash_readStatus(void);
+static bool spi_flash_readIdentification(void);
 
 
 

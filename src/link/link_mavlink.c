@@ -3,14 +3,28 @@
 #include "serial.h"
 #include "mavlink.h"
 #include "link_mavlink.h"
+#include "mavlink.h"
 
-void LINK_MAVLINK::init()
+#define RX_BUF_SIZE 300    
+#define TX_BUF_SIZE 300    
+
+uint8_t sendbuf[300];
+serialPort_t * _port;
+uint8_t _rxBuf[RX_BUF_SIZE]; 
+uint8_t _txBuf[TX_BUF_SIZE];
+
+mavlink_status_t _r_mavlink_status;
+mavlink_message_t msg;
+
+void handle_log_request_list(mavlink_message_t *msg);
+
+void link_mavlink_init()
 {   
     _port = serialOpen(USART1, 921600, _rxBuf, RX_BUF_SIZE, _txBuf, TX_BUF_SIZE);
 }    
 
 
-//void LINK_MAVLINK::send(mavlink_message_t &msg)
+//void link_mavlink_send(mavlink_message_t &msg)
 //{
 //    mavlink_message_t msg;
 //    uint16_t len;
@@ -42,15 +56,15 @@ void LINK_MAVLINK::init()
 //    
 //}
 
-void LINK_MAVLINK::msg_send(mavlink_message_t &msg)
+void link_mavlink_msg_send(mavlink_message_t* msg)
 {
     uint16_t len;
        
-    len = mavlink_msg_to_send_buffer(sendbuf, &msg);
+    len = mavlink_msg_to_send_buffer(sendbuf, msg);
     serialWriteMass(_port, sendbuf, len);    
 }
 
-bool LINK_MAVLINK::recv(mavlink_message_t &msg)
+bool link_mavlink_recv(mavlink_message_t* msg)
 {
     uint8_t c;
 
@@ -58,7 +72,7 @@ bool LINK_MAVLINK::recv(mavlink_message_t &msg)
     {
         c = serialRead(_port);
 
-        if(mavlink_parse_char(0, c, &msg, &_r_mavlink_status))
+        if(mavlink_parse_char(0, c, msg, &_r_mavlink_status))
         {
             return true;
         }
@@ -68,7 +82,7 @@ bool LINK_MAVLINK::recv(mavlink_message_t &msg)
 }
 
 
-//void LINK_MAVLINK::recv()
+//void link_mavlink_recv()
 //{
 //    uint8_t c;
 //    //mavlink_message_t msg={};
@@ -121,7 +135,7 @@ bool LINK_MAVLINK::recv(mavlink_message_t &msg)
 //}
 
 
-//void LINK_MAVLINK::handle_log_request_list(mavlink_message_t *msg)
+//void link_mavlink_handle_log_request_list(mavlink_message_t *msg)
 //{
 ////    mavlink_log_request_list_t packet;
 ////    mavlink_msg_log_request_list_decode(msg, &packet);

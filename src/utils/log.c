@@ -1,8 +1,14 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "log.h"
 #include "log_messages.h"
 #include "timer.h"
+#include "mtd.h"
+#include "att_est_q.h"
+#include "mpu6050.h"
+#include "ms5611.h"
+#include "hmc5883.h"
 
 static uint64_t timer[log_formats_num];
 static bool record;
@@ -14,7 +20,7 @@ void log_init()
 	record = true;
 	/* construct message format packet */
 	struct {
-		LOG_PACKET_HEADER;
+		LOG_PACKET_HEADER
 		struct log_format_s body;
 	} log_msg_format = {
 		LOG_PACKET_HEADER_INIT(LOG_FORMAT_MSG),
@@ -23,7 +29,7 @@ void log_init()
 	/* fill message format packet for each format and write it */
 	for (unsigned i = 0; i < log_formats_num; i++) {
 		log_msg_format.body = log_formats[i];
-		write(&log_msg_format, sizeof(log_msg_format));
+		log_write(&log_msg_format, sizeof(log_msg_format));
 	}
 }
 
@@ -58,7 +64,7 @@ void log_write_att(uint16_t rate)
     if(Timer_elapsedTime(&timer[LOG_ATT_MSG]) > 1*1000*1000/rate)
     {
         timer[LOG_ATT_MSG] = Timer_getTime();
-        write(&pkt, sizeof(pkt));
+        log_write(&pkt, sizeof(pkt));
     }
     
 }
@@ -67,15 +73,15 @@ void log_write_imu(uint16_t rate)
 {
     struct log_IMU_s pkt = {
     	LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-		.acc_x = sens_inertialSensor_get_acc_x(),
-		.acc_y = sens_inertialSensor_get_acc_y(),
-		.acc_z = sens_inertialSensor_get_acc_z(),
-		.gyro_x = sens_inertialSensor_get_gyro_x(),
-		.gyro_y = sens_inertialSensor_get_gyro_y(),
-		.gyro_z = sens_inertialSensor_get_gyro_z(),
-		.mag_x = sens_compass_get_mag_x(),
-		.mag_y = sens_compass_get_mag_y(),
-		.mag_z = sens_compass_get_mag_z(),
+		.acc_x = mpu6050_get_acc_x(),
+		.acc_y = mpu6050_get_acc_y(),
+		.acc_z = mpu6050_get_acc_z(),
+		.gyro_x = mpu6050_get_gyro_x(),
+		.gyro_y = mpu6050_get_gyro_y(),
+		.gyro_z = mpu6050_get_gyro_z(),
+		.mag_x = hmc5883_get_mag_x(),
+		.mag_y = hmc5883_get_mag_y(),
+		.mag_z = hmc5883_get_mag_z(),
 		.temp_acc = 0.0f,
 		.temp_gyro = 0.0f,
 		.temp_mag = 0.0f,
@@ -83,7 +89,7 @@ void log_write_imu(uint16_t rate)
     if(Timer_elapsedTime(&timer[LOG_IMU_MSG]) > 1*1000*1000/rate)
     {
         timer[LOG_IMU_MSG] = Timer_getTime();
-        write(&pkt, sizeof(pkt));
+        log_write(&pkt, sizeof(pkt));
     }
 }
 
@@ -91,14 +97,14 @@ void log_write_sens(uint16_t rate)
 {
     struct log_SENS_s pkt = {
     	LOG_PACKET_HEADER_INIT(LOG_SENS_MSG),
-		.baro_pres = sens_baro_get_press(),
-		.baro_alt = sens_baro_get_altitude(),
-		.baro_temp = sens_baro_get_temp(),
+		.baro_pres = ms5611_get_press(),
+		.baro_alt = ms5611_get_altitude(),
+		.baro_temp = ms5611_get_temp(),
     };
     if(Timer_elapsedTime(&timer[LOG_SENS_MSG]) > 1*1000*1000/rate)
     {
         timer[LOG_SENS_MSG] = Timer_getTime();
-        write(&pkt, sizeof(pkt));
+        log_write(&pkt, sizeof(pkt));
     }
 }
 

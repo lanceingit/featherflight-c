@@ -1,9 +1,8 @@
 #pragma once
 
 #include "mathlib.h"
-#include "LowPassFilter2p.hpp"
+#include "LowPassFilter2p.h"
 #include "link_mavlink.h"
-#include "sensors.h"
 
 
 class Att_Est_Q

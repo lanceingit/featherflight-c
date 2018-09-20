@@ -1,8 +1,5 @@
 #pragma once
 
-#include "rotation.h"
-
-
 void mpu6050_init(enum Rotation rotation);
 void mpu6050_read(void);
 
@@ -24,7 +21,6 @@ void mpu6050_set_gyro_z(float g);
 void mpu6050_set_gyro_offset_x(float offset);
 void mpu6050_set_gyro_offset_y(float offset);
 void mpu6050_set_gyro_offset_z(float offset);
-bool mpu6050_ready(void);
 bool mpu6050_update(void);
 void mpu6050_clean_update(void);
 

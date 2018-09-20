@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "mpu6050.h"
 #include "LowPassFilter2p.h"
+#include "sensor.h"
 
 #define MPU6050_ADDRESS         0x68
 #define MPU_RA_XG_OFFS_TC       0x00    //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
@@ -121,33 +122,36 @@ enum accel_fsr_e {
 	NUM_ACCEL_FSR
 };
 
-static float acc[3];
+struct mpu6050_s
+{
+	struct inertial_sensor_s heir;
+} mpu6050 = {
+	.heir = {
+		.init = &mpu6050_init;
+		.read = &mpu6050_read;
+	};
+};
+
+static struct mpu6050_s* this=&mpu6050;
+
 static float gyro_raw[3];
-static float gyro[3];
 static float gyro_offset[3];
 
-static struct LowPassFilter2p accel_filter_x;
-static struct LowPassFilter2p accel_filter_y;
-static struct LowPassFilter2p accel_filter_z;
-static struct LowPassFilter2p gyro_filter_x;
-static struct LowPassFilter2p gyro_filter_y;
-static struct LowPassFilter2p gyro_filter_z;
-
-static bool ready;
-static enum Rotation rotation;
 static bool update;
 
-void mpu6050_init(enum Rotation r)
+bool mpu6050_init(enum Rotation r)
 {
-	lowPassFilter2p_init(&accel_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&accel_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&accel_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	ready = false;
-	rotation = r;
+	lowPassFilter2p_init(&this->heir.accel_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.accel_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.accel_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+	this->heir.ready = false;
+	this->heir.rotation = r;
 	update = false;
+	
+	return mpu6050_config();
 }
 
 
@@ -165,8 +169,6 @@ bool mpu6050_config(void)
     if (sig != (MPU6050_ADDRESS & 0x7e))
         return false;
 
-    
-    
     ack = i2c_write(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
 
     Timer_delayUs(100*1000);
@@ -191,9 +193,7 @@ bool mpu6050_config(void)
 //            0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
 //    
 //    
-    
-    
-    ready = true;
+    this->heir.ready = true;
     
     return true;
 }
@@ -214,18 +214,18 @@ void mpu6050_read()
     float z_in_new = (float)((int16_t)((buf[4] << 8) | buf[5]))*(9.80665f /2048);
     
 
-    rotate_3f(rotation, &x_in_new, &y_in_new, &z_in_new);
+    rotate_3f(this->heir.rotation, &x_in_new, &y_in_new, &z_in_new);
 
-    acc[0] = lowPassFilter2p_apply(&accel_filter_x, x_in_new);
-    acc[1] = lowPassFilter2p_apply(&accel_filter_y, y_in_new);
-    acc[2] = lowPassFilter2p_apply(&accel_filter_z, z_in_new);
+    this->heir.acc[0] = lowPassFilter2p_apply(&this->heir.accel_filter_x, x_in_new);
+    this->heir.acc[1] = lowPassFilter2p_apply(&this->heir.accel_filter_y, y_in_new);
+    this->heir.acc[2] = lowPassFilter2p_apply(&this->heir.accel_filter_z, z_in_new);
     
     
     float x_gyro_in_new = (float)((int16_t)((buf[8] << 8) | buf[9]))*(0.0174532 / 16.4);
     float y_gyro_in_new = (float)((int16_t)((buf[10] << 8) | buf[11]))*(0.0174532 / 16.4);
     float z_gyro_in_new = (float)((int16_t)((buf[12] << 8) | buf[13]))*(0.0174532 / 16.4);  
 
-    rotate_3f(rotation, &x_gyro_in_new, &y_gyro_in_new, &z_gyro_in_new);
+    rotate_3f(this->heir.rotation, &x_gyro_in_new, &y_gyro_in_new, &z_gyro_in_new);
 
     gyro_raw[0] = x_gyro_in_new;
     gyro_raw[1] = y_gyro_in_new;
@@ -235,119 +235,11 @@ void mpu6050_read()
     y_gyro_in_new -= gyro_offset[1];
     z_gyro_in_new -= gyro_offset[2];
 
-	gyro[0] = lowPassFilter2p_apply(&gyro_filter_x, x_gyro_in_new);
-	gyro[1] = lowPassFilter2p_apply(&gyro_filter_y, y_gyro_in_new);
-	gyro[2] = lowPassFilter2p_apply(&gyro_filter_z, z_gyro_in_new);
+	this->heir.gyro[0] = lowPassFilter2p_apply(&this->heir.gyro_filter_x, x_gyro_in_new);
+	this->heir.gyro[1] = lowPassFilter2p_apply(&this->heir.gyro_filter_y, y_gyro_in_new);
+	this->heir.gyro[2] = lowPassFilter2p_apply(&this->heir.gyro_filter_z, z_gyro_in_new);
 
 	update = true;
-}
-
-void mpu6050_get_accel(float *a)
-{
-	a[0] = acc[0];
-	a[1] = acc[1];
-	a[2] = acc[2];
-}
-
-void mpu6050_get_gyro(float *g)
-{
-	g[0] = gyro[0];
-	g[1] = gyro[1];
-	g[2] = gyro[2];
-}
-
-float mpu6050_get_acc_x()
-{
-	return acc[0];
-}
-
-float mpu6050_get_acc_y()
-{
-	return acc[1];
-}
-
-float mpu6050_get_acc_z()
-{
-	return acc[2];
-}
-
-float mpu6050_get_gyro_x()
-{
-	return gyro[0];
-}
-
-float mpu6050_get_gyro_y()
-{
-	return gyro[1];
-}
-
-float mpu6050_get_gyro_z()
-{
-	return gyro[2];
-}
-
-void mpu6050_set_accel(float *a)
-{
-	acc[0] = a[0];
-	acc[1] = a[1];
-	acc[2] = a[2];
-}
-
-void mpu6050_set_gyro(float *g)
-{
-	gyro[0] = g[0];
-	gyro[1] = g[1];
-	gyro[2] = g[2];
-}
-
-void mpu6050_set_acc_x(float a)
-{
-	acc[0] = a;
-}
-
-void mpu6050_set_acc_y(float a)
-{
-	acc[1] = a;
-}
-
-void mpu6050_set_acc_z(float a)
-{
-	acc[2] = a;
-}
-
-void mpu6050_set_gyro_x(float g)
-{
-	gyro[0] = g;
-}
-
-void mpu6050_set_gyro_y(float g)
-{
-	gyro[1] = g;
-}
-
-void mpu6050_set_gyro_z(float g)
-{
-	gyro[2] = g;
-}
-
-void mpu6050_set_gyro_offset_x(float offset)
-{
-	gyro_offset[0] = offset;
-}
-
-void mpu6050_set_gyro_offset_y(float offset)
-{
-	gyro_offset[1] = offset;
-}
-
-void mpu6050_set_gyro_offset_z(float offset)
-{
-	gyro_offset[2] = offset;
-}
-
-bool mpu6050_ready()
-{
-	return ready;
 }
 
 bool mpu6050_update()

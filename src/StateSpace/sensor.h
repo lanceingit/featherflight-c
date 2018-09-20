@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rotation.h"
 #include "LowPassFilter2p.h"
 
 
@@ -19,29 +20,18 @@ struct inertial_sensor_s
     float acc[3];
     float gyro[3];
 
-	LowPassFilter2p	accel_filter_x;
-	LowPassFilter2p	accel_filter_y;
-	LowPassFilter2p	accel_filter_z;
-	LowPassFilter2p	gyro_filter_x;
-	LowPassFilter2p	gyro_filter_y;
-	LowPassFilter2p	gyro_filter_z;
+	struct LowPassFilter2p	accel_filter_x;
+	struct LowPassFilter2p	accel_filter_y;
+	struct LowPassFilter2p	accel_filter_z;
+	struct LowPassFilter2p	gyro_filter_x;
+	struct LowPassFilter2p	gyro_filter_y;
+	struct LowPassFilter2p	gyro_filter_z;
+
+    enum Rotation rotation;
 
     //method
     init_func* init;
     read_func* read;
-
-    read_status_func* ready;
-    set_status_func* set_ready;
-
-    get_float_func* get_acc_x;
-    get_float_func* get_acc_y;
-    get_float_func* get_acc_z;
-    get_float_func* get_gyro_x;
-    get_float_func* get_gyro_y;
-    get_float_func* get_gyro_z;
-
-    get_vector_3f_func* get_accel;
-    get_vector_3f_func* get_gyro;
 };
 
 struct compass_s
@@ -75,4 +65,21 @@ struct baro_s
     get_float_func* get_altitude;
     get_float_func* get_temp;       
 };
+
+void inertial_sensor_register(struct inertial_sensor_s* item);
+void inertial_sensor_get_acc(float *acc);
+void inertial_sensor_get_gyro(float *gyro);
+float inertial_sensor_get_acc_x(void);
+float inertial_sensor_get_acc_y(void);
+float inertial_sensor_get_acc_z(void);
+float inertial_sensor_get_gyro_x(void);
+float inertial_sensor_get_gyro_y(void);
+float inertial_sensor_get_gyro_z(void);
+bool inertial_sensor_ready(void);
+void inertial_sensor_set_ready(void);
+
+
+
+void compass_register(struct compass_s* item);
+void baro_register(struct baro_s* item);
 

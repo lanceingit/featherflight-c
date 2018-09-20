@@ -69,25 +69,3 @@ float hmc5883_get_mag_z()
 {
 	return mag[2];
 }
-
-void hmc5883_set_mag(float *m)
-{
-	mag[0] = m[0];
-	mag[1] = m[1];
-	mag[2] = m[2];
-}
-
-void hmc5883_set_mag_x(float m)
-{
-	mag[0] = m;
-}
-
-void hmc5883_set_mag_y(float m)
-{
-	mag[1] = m;
-}
-
-void hmc5883_set_mag_z(float m)
-{
-	mag[2] = m;
-}

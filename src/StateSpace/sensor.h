@@ -1,7 +1,12 @@
 #pragma once
 
+#include <stdbool.h>
 #include "rotation.h"
 #include "LowPassFilter2p.h"
+
+#include "mpu6050.h"
+#include "hmc5883.h"
+#include "ms5611.h"
 
 
 typedef float (get_float_func)(void);
@@ -67,6 +72,7 @@ struct baro_s
 };
 
 void inertial_sensor_register(struct inertial_sensor_s* item);
+void inertial_sensor_read(void);
 void inertial_sensor_get_acc(float *acc);
 void inertial_sensor_get_gyro(float *gyro);
 float inertial_sensor_get_acc_x(void);
@@ -78,8 +84,17 @@ float inertial_sensor_get_gyro_z(void);
 bool inertial_sensor_ready(void);
 void inertial_sensor_set_ready(void);
 
-
-
 void compass_register(struct compass_s* item);
+void compass_read(void);
+float compass_get_mag_x(void);
+float compass_get_mag_y(void);
+float compass_get_mag_z(void);
+
 void baro_register(struct baro_s* item);
+void baro_read(void);
+float baro_get_press(void);
+float baro_get_altitude(void);
+float baro_get_temp(void);
+
+void sensor_init(void);
 

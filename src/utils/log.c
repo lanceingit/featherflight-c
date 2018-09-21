@@ -73,15 +73,15 @@ void log_write_imu(uint16_t rate)
 {
     struct log_IMU_s pkt = {
     	LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-		.acc_x = mpu6050_get_acc_x(),
-		.acc_y = mpu6050_get_acc_y(),
-		.acc_z = mpu6050_get_acc_z(),
-		.gyro_x = mpu6050_get_gyro_x(),
-		.gyro_y = mpu6050_get_gyro_y(),
-		.gyro_z = mpu6050_get_gyro_z(),
-		.mag_x = hmc5883_get_mag_x(),
-		.mag_y = hmc5883_get_mag_y(),
-		.mag_z = hmc5883_get_mag_z(),
+		.acc_x = inertial_sensor_get_acc_x(),
+		.acc_y = inertial_sensor_get_acc_x(),
+		.acc_z = inertial_sensor_get_acc_z(),
+		.gyro_x = inertial_sensor_get_gyro_x(),
+		.gyro_y = inertial_sensor_get_gyro_y(),
+		.gyro_z = inertial_sensor_get_gyro_z(),
+		.mag_x = compass_get_mag_x(),
+		.mag_y = compass_get_mag_y(),
+		.mag_z = compass_get_mag_z(),
 		.temp_acc = 0.0f,
 		.temp_gyro = 0.0f,
 		.temp_mag = 0.0f,
@@ -97,9 +97,9 @@ void log_write_sens(uint16_t rate)
 {
     struct log_SENS_s pkt = {
     	LOG_PACKET_HEADER_INIT(LOG_SENS_MSG),
-		.baro_pres = ms5611_get_press(),
-		.baro_alt = ms5611_get_altitude(),
-		.baro_temp = ms5611_get_temp(),
+		.baro_pres = baro_get_press(),
+		.baro_alt =  baro_get_altitude(),
+		.baro_temp = baro_get_temp(),
     };
     if(Timer_elapsedTime(&timer[LOG_SENS_MSG]) > 1*1000*1000/rate)
     {

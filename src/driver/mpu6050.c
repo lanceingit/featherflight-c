@@ -122,22 +122,15 @@ enum accel_fsr_e {
 	NUM_ACCEL_FSR
 };
 
-struct mpu6050_s
-{
-	struct inertial_sensor_s heir;
-} mpu6050 = {
+struct mpu6050_s mpu6050 = {
 	.heir = {
-		.init = &mpu6050_init;
-		.read = &mpu6050_read;
-	};
+		.init = &mpu6050_init,
+		.read = &mpu6050_read,
+	},
 };
 
 static struct mpu6050_s* this=&mpu6050;
 
-static float gyro_raw[3];
-static float gyro_offset[3];
-
-static bool update;
 
 bool mpu6050_init(enum Rotation r)
 {
@@ -149,7 +142,7 @@ bool mpu6050_init(enum Rotation r)
 	lowPassFilter2p_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
 	this->heir.ready = false;
 	this->heir.rotation = r;
-	update = false;
+	this->update = false;
 	
 	return mpu6050_config();
 }
@@ -227,29 +220,29 @@ void mpu6050_read()
 
     rotate_3f(this->heir.rotation, &x_gyro_in_new, &y_gyro_in_new, &z_gyro_in_new);
 
-    gyro_raw[0] = x_gyro_in_new;
-    gyro_raw[1] = y_gyro_in_new;
-    gyro_raw[2] = z_gyro_in_new;
+    this->gyro_raw[0] = x_gyro_in_new;
+    this->gyro_raw[1] = y_gyro_in_new;
+    this->gyro_raw[2] = z_gyro_in_new;
     
-    x_gyro_in_new -= gyro_offset[0];
-    y_gyro_in_new -= gyro_offset[1];
-    z_gyro_in_new -= gyro_offset[2];
+    x_gyro_in_new -= this->gyro_offset[0];
+    y_gyro_in_new -= this->gyro_offset[1];
+    z_gyro_in_new -= this->gyro_offset[2];
 
 	this->heir.gyro[0] = lowPassFilter2p_apply(&this->heir.gyro_filter_x, x_gyro_in_new);
 	this->heir.gyro[1] = lowPassFilter2p_apply(&this->heir.gyro_filter_y, y_gyro_in_new);
 	this->heir.gyro[2] = lowPassFilter2p_apply(&this->heir.gyro_filter_z, z_gyro_in_new);
 
-	update = true;
+	this->update = true;
 }
 
 bool mpu6050_update()
 {
-	return update;
+	return this->update;
 }
 
 void mpu6050_clean_update()
 {
-	update = false;
+	this->update = false;
 }
 
 

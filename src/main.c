@@ -2,10 +2,7 @@
 
 #include "stm32f30x.h"
 
-
-#include "mpu6050.h"
-#include "ms5611.h"
-#include "hmc5883.h"
+#include "sensor.h"
 #include "spi_flash.h"
 #include "mtd.h"
 #include "log.h"
@@ -13,6 +10,7 @@
 #include "mavlink_log.h"
 #include "att_est_q.h"
 #include "timer.h"
+#include "pref.h"
 
 static uint64_t last_mpu6050_updata_time = 0;
 static uint64_t last_hmc5883_updata_time = 0;
@@ -38,56 +36,6 @@ void gyro_cal(void);
 
 
 
-struct Pref
-{
-    uint64_t t0,t1;
-    uint64_t cnt,avg,sum,t_max,t_min;
-};
-
-void pref_init(struct Pref* pref)
-{
-    pref->t0=0;
-    pref->t1 = 0;
-    pref->cnt=0;
-    pref->avg=0;
-    pref->sum=0;
-    pref->t_max=0;
-    pref->t_min=0xFFFFFFFF;
-}
-
-void pref_interval(struct Pref* pref)
-{
-    pref.t1 = Timer_getTime() - pref.t0;
-    if(pref->t0 != 0)
-    {
-        pref->sum += pref->t1;
-        pref->cnt++;
-        pref->avg = pref->sum / pref->cnt;
-        if(pref->t1>pref->t_max) pref->t_max=pref->t1;
-        if(pref->t1<pref->t_min) pref->t_min=pref->t1;
-    }
-    pref->t0 = Timer_getTime();
-}
-
-void pref_begin(struct Pref* pref)
-{
-    pref->t0 = Timer_getTime();
-}
-
-void pref_end(struct Pref* pref)
-{
-    pref->t1 = Timer_getTime() - pref->t0;
-    if(pref->t0 != 0)
-    {
-        pref->sum += pref->t1;
-        pref->cnt++;
-        pref->avg = pref->sum / pref->cnt;
-        if(pref->t1>pref->t_max) pref->t_max=pref->t1;
-        if(pref->t1<pref->t_min) pref->t_min=pref->t1;
-    }
-}
-
-
 struct Pref pref;
 struct Pref attPref;
 struct Pref attElapsed;
@@ -104,12 +52,14 @@ int main()
     mtd_test();
     logging_init();
     link_mavlink_init();
-    mpu6050_init();
+
+    inertial_sensor_register(&mpu6050.heir);
+    compass_register(&hmc5883.heir);
+    baro_register(&ms5611.heir);
+    sensor_init();
 
     gyro_cal();
 
-    hmc5883_init();
-    ms5611_init();
     att_init();
     pref_init(&pref);
     pref_init(&attPref);
@@ -278,17 +228,17 @@ void sensorTask(void)
 {        
     if(Timer_getTime() - last_mpu6050_updata_time > 1000)
     {        
-        mpu6050_read();
+        inertial_sensor_read();
         last_mpu6050_updata_time = Timer_getTime();
     }
     if(Timer_getTime() - last_hmc5883_updata_time > (1000000 / 150))
     {        
-        hmc5883_read();
+        compass_read();
         last_hmc5883_updata_time = Timer_getTime();
     }
     if(Timer_getTime() - last_ms5611_updata_time > 25000)
     {
-        ms5611_read();
+        baro_read();
         last_ms5611_updata_time = Timer_getTime();
     }
 }
@@ -309,29 +259,33 @@ void gyro_cal(void)
 {
 	while(1)
 	{
-		math::Vector<3>	gyro;
-		math::Vector<3>	gyro_sum;
-		math::Vector<3>	accel_start;
-		math::Vector<3>	accel_end;
-		math::Vector<3>	accel_diff;
+		float gyro[3];
+		float gyro_sum[3];
+		float accel_start[3];
+		float accel_end[3];
+		float accel_diff[3];
 
-		mpu6050.read();
-		sensor.inertialSensor->get_accel(accel_start.data);
-		gyro_sum.zero();
-        for (uint8_t i=0; i<50; i++) {
-        	mpu6050.read();
-    		sensor.inertialSensor->get_gyro(gyro.data);
-    		gyro_sum += gyro;
+		inertial_sensor_read();
+		inertial_sensor_get_acc(accel_start);
+        memset(gyro_sum, 0, sizeof(gyro_sum));
+        for(uint8_t i=0; i<50; i++) {
+        	inertial_sensor_read();
+    		inertial_sensor_get_gyro(gyro);
+    		gyro_sum[0] += gyro[0];
+    		gyro_sum[1] += gyro[1];
+    		gyro_sum[2] += gyro[2];
     		Timer_delayUs(10*1000);
         }
-        mpu6050.read();
-		sensor.inertialSensor->get_accel(accel_end.data);
-		accel_diff = accel_start - accel_end;
-		if(accel_diff.length() >  0.2f) continue;
+        inertial_sensor_read();
+		inertial_sensor_get_acc(accel_end);
+        for(uint8_t i=0; i<3; i++) {
+		    accel_diff[i] = accel_start[i] - accel_end[i];
+        }
+		if(vocter_length(accel_diff) >  0.2f) continue;
 
-		sensor.inertialSensor->set_gyro_offset_x(gyro_sum(0)/50);
-		sensor.inertialSensor->set_gyro_offset_y(gyro_sum(1)/50);
-		sensor.inertialSensor->set_gyro_offset_z(gyro_sum(2)/50);
+		inertial_sensor_set_gyro_offset_x(gyro_sum[0]/50);
+		inertial_sensor_set_gyro_offset_y(gyro_sum[1]/50);
+		inertial_sensor_set_gyro_offset_z(gyro_sum[2]/50);
         
         return;
 	}
@@ -341,9 +295,9 @@ void logTask(void)
 {
 	if(!mtd_is_full() && logging_need_record())
 	{
-	    logging_write_att(att, 50);
-	    logging_write_imu(sensor, 500);
-	    logging_write_sens(sensor, 50);
+	    logging_write_att(50);
+	    logging_write_imu(500);
+	    logging_write_sens(50);
 	}
 }
 

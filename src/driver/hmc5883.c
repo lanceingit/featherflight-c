@@ -3,6 +3,7 @@
 
 #include "i2c.h"
 #include "hmc5883.h"
+#include "sensor.h"
 
 
 #define MAG_ADDRESS 0x1E
@@ -18,7 +19,14 @@
 #define HMC_POS_BIAS 1
 #define HMC_NEG_BIAS 2
 
-static float mag[3];
+struct hmc5883_s hmc5883 = {
+	.heir = {
+		.init = &hmc5883_init,
+		.read = &hmc5883_read,
+	},
+};
+
+static struct hmc5883_s* this;
 
 
 
@@ -49,23 +57,9 @@ void hmc5883_read(void)
     }
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-    mag[0] = (int16_t)(buf[0] << 8 | buf[1]) * (1.0f / 660.0f);
-    mag[1] = (int16_t)(buf[2] << 8 | buf[3]) * (1.0f / 660.0f);
-    mag[2] = (int16_t)(buf[4] << 8 | buf[5]) * (1.0f / 660.0f);
-
+    this->heir.mag[0] = (int16_t)(buf[0] << 8 | buf[1]) * (1.0f / 660.0f);
+    this->heir.mag[1] = (int16_t)(buf[2] << 8 | buf[3]) * (1.0f / 660.0f);
+    this->heir.mag[2] = (int16_t)(buf[4] << 8 | buf[5]) * (1.0f / 660.0f);
 }
 
-float hmc5883_get_mag_x()
-{
-	return mag[0];
-}
 
-float hmc5883_get_mag_y()
-{
-	return mag[1];
-}
-
-float hmc5883_get_mag_z()
-{
-	return mag[2];
-}

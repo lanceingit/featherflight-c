@@ -9,6 +9,11 @@ void inertial_sensor_register(struct inertial_sensor_s* item)
     inertial_sensor = item;
 }
 
+void inertial_sensor_read(void)
+{
+	inertial_sensor->read();
+}
+
 void inertial_sensor_get_accel(float *acc)
 {
 	acc[0] = inertial_sensor->acc[0];
@@ -68,7 +73,54 @@ void compass_register(struct compass_s* item)
     compass = item;
 }
 
+void compass_read(void)
+{
+	compass->read();
+}
+
+float compass_get_mag_x()
+{
+	return compass->mag[0];
+}
+
+float compass_get_mag_y()
+{
+	return compass->mag[1];
+}
+
+float compass_get_mag_z()
+{
+	return compass->mag[2];
+}
+
 void baro_register(struct baro_s* item)
 {
     baro = item;
+}
+
+void baro_read(void)
+{
+	baro->read();
+}
+
+float baro_get_press()
+{
+	return baro->pressure;
+}
+
+float baro_get_altitude()
+{
+	return baro->altitude;
+}
+
+float baro_get_temp()
+{
+	return baro->temperature;
+}
+
+void sensor_init(void)
+{
+	inertial_sensor->init();
+	compass->init();
+	baro->init();	
 }

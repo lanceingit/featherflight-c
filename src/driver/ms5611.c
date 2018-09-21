@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "i2c.h"
 #include "ms5611.h"
+#include "sensor.h"
 
 
 #define MS5611_ADDR                 0x77
@@ -41,33 +42,16 @@
 #define MSL_PRESSURE   101325
 
 
-struct prom_s {
-	uint16_t factory_setup;
-	uint16_t c1_pressure_sens;
-	uint16_t c2_pressure_offset;
-	uint16_t c3_temp_coeff_pres_sens;
-	uint16_t c4_temp_coeff_pres_offset;
-	uint16_t c5_reference_temp;
-	uint16_t c6_temp_coeff_temp;
-	uint16_t serial_and_crc;
+
+
+struct ms5611_s ms5611 = {
+	.heir = {
+		.init = &ms5611_init,
+		.read = &ms5611_read,
+	},
 };
 
-union prom_u {
-	uint16_t c[8];
-	struct prom_s s;
-};
-
-
-static float temperature;
-static float pressure;
-static float altitude;
-static union prom_u prom_buf;
-static uint8_t measure_phase;
-static uint8_t collect_phase;
-static int32_t TEMP;
-static int64_t OFF;
-static int64_t SENS;
-
+static struct ms5611_s* this=&ms5611;
 
 static bool ms5611_read_prom(void);
 static int8_t ms5611_crc(uint16_t *prom);
@@ -94,8 +78,8 @@ bool ms5611_init(void)
         return false;
     }        
     
-    measure_phase = 0;
-    collect_phase = false;
+    this->measure_phase = 0;
+    this->collect_phase = false;
     
     return true;
 }
@@ -103,46 +87,46 @@ bool ms5611_init(void)
 
 void ms5611_read()
 {
-    if (collect_phase)
+    if (this->collect_phase)
     {
         uint32_t raw;
         raw = ms5611_read_adc();
 
-        if(measure_phase == 0)
+        if(this->measure_phase == 0)
         {
-            int32_t dT = (int32_t)raw - ((int32_t)prom_buf.s.c5_reference_temp << 8);
-            TEMP = 2000 + (int32_t)(((int64_t)dT * prom_buf.s.c6_temp_coeff_temp) >> 23);
-			OFF  = ((int64_t)prom_buf.s.c2_pressure_offset << 16) + (((int64_t)prom_buf.s.c4_temp_coeff_pres_offset * dT) >> 7);
-			SENS = ((int64_t)prom_buf.s.c1_pressure_sens << 15) + (((int64_t)prom_buf.s.c3_temp_coeff_pres_sens * dT) >> 8);
-			if (TEMP < 2000)
+            int32_t dT = (int32_t)raw - ((int32_t)this->prom_buf.s.c5_reference_temp << 8);
+            this->TEMP = 2000 + (int32_t)(((int64_t)dT * this->prom_buf.s.c6_temp_coeff_temp) >> 23);
+			this->OFF  = ((int64_t)this->prom_buf.s.c2_pressure_offset << 16) + (((int64_t)this->prom_buf.s.c4_temp_coeff_pres_offset * dT) >> 7);
+			this->SENS = ((int64_t)this->prom_buf.s.c1_pressure_sens << 15) + (((int64_t)this->prom_buf.s.c3_temp_coeff_pres_sens * dT) >> 8);
+			if (this->TEMP < 2000)
             {
 
 				int32_t T2 = POW2(dT) >> 31;
 
-				int64_t f = POW2((int64_t)TEMP - 2000);
+				int64_t f = POW2((int64_t)this->TEMP - 2000);
 				int64_t OFF2 = 5 * f >> 1;
 				int64_t SENS2 = 5 * f >> 2;
 
-				if (TEMP < -1500) {
+				if (this->TEMP < -1500) {
 
 					int64_t f2 = POW2(TEMP + 1500);
 					OFF2 += 7 * f2;
 					SENS2 += 11 * f2 >> 1;
 				}
 
-				TEMP -= T2;
-				OFF  -= OFF2;
-				SENS -= SENS2;
+				this->TEMP -= T2;
+				this->OFF  -= OFF2;
+				this->SENS -= SENS2;
 			}
         }
         else
         {
-            int32_t P = (((raw * SENS) >> 21) - OFF) >> 15;
+            int32_t P = (((raw * this->SENS) >> 21) - this->OFF) >> 15;
 //            _P = P * 0.01f;
 //            _T = _TEMP * 0.01f;
         
-            temperature = TEMP / 100.0f;
-            pressure = P / 100.0f;		/* convert to millibar */
+            this->heir.temperature = this->TEMP / 100.0f;
+            this->heir.pressure = P / 100.0f;		/* convert to millibar */
             const double T1 = 15.0 + 273.15;	/* temperature at base height in Kelvin */
             const double a  = -6.5 / 1000;	/* temperature gradient in degrees per metre */
             const double g  = 9.80665;	/* gravity constant in m/s/s */
@@ -163,22 +147,22 @@ void ms5611_read()
              * h = -------------------------------  + h1
              *                   a
              */
-            altitude = (((pow((p / p1), (-(a * R) / g))) * T1) - T1) / a;
+            this->heir.altitude = (((pow((p / p1), (-(a * R) / g))) * T1) - T1) / a;
 
         }
         
-        measure_phase++;
-        if(measure_phase >= MS5611_MEASUREMENT_RATIO+1)
+        this->measure_phase++;
+        if(this->measure_phase >= MS5611_MEASUREMENT_RATIO+1)
         {
-            measure_phase = 0;
+            this->measure_phase = 0;
         }
         
-        collect_phase = false;
+        this->collect_phase = false;
         return;
     }
     
     
-    if(measure_phase == 0)
+    if(this->measure_phase == 0)
     {
         i2c_write(MS5611_ADDR, ADDR_CMD_CONVERT_D2_OSR1024, 1);
     }
@@ -187,35 +171,35 @@ void ms5611_read()
         i2c_write(MS5611_ADDR, ADDR_CMD_CONVERT_D1_OSR1024, 1);
     }
         
-    collect_phase = true;
+    this->collect_phase = true;
 
 }
 
-uint32_t ms5611_read_adc(void)
+static uint32_t ms5611_read_adc(void)
 {
     uint8_t rxbuf[3];
     i2c_read(MS5611_ADDR, CMD_ADC_READ, 3, rxbuf); // read ADC
     return (rxbuf[0] << 16) | (rxbuf[1] << 8) | rxbuf[2];
 }
 
-bool ms5611_read_prom(void)
+static bool ms5611_read_prom(void)
 {
     uint8_t rxbuf[2] = { 0, 0 };
 
     for (uint8_t i = 0; i < PROM_NB; i++)
     {
         i2c_read(MS5611_ADDR, CMD_PROM_RD + i * 2, 2, rxbuf); // send PROM READ command
-        prom_buf.c[i] = rxbuf[0] << 8 | rxbuf[1];
+        this->prom_buf.c[i] = rxbuf[0] << 8 | rxbuf[1];
     
     }
     
-    if (ms5611_crc(prom_buf.c) != 0)
+    if (ms5611_crc(this->prom_buf.c) != 0)
         return false;    
     
     return true;
 }
 
-int8_t ms5611_crc(uint16_t *prom)
+static int8_t ms5611_crc(uint16_t *prom)
 {
     int32_t i, j;
     uint32_t res = 0;
@@ -245,18 +229,5 @@ int8_t ms5611_crc(uint16_t *prom)
     return -1;
 }
 
-float ms5611_get_press()
-{
-	return pressure;
-}
 
-float ms5611_get_altitude()
-{
-	return altitude;
-}
-
-float ms5611_get_temp()
-{
-	return temperature;
-}
 

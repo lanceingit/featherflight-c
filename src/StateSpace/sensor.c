@@ -1,4 +1,5 @@
 #include "sensor.h"
+#include "vector.h"
 
 static struct inertial_sensor_s* inertial_sensor;
 static struct compass_s* compass;
@@ -9,23 +10,19 @@ void inertial_sensor_register(struct inertial_sensor_s* item)
     inertial_sensor = item;
 }
 
-void inertial_sensor_read(void)
+void inertial_sensor_update(void)
 {
-	inertial_sensor->read();
+	inertial_sensor->update();
 }
 
 void inertial_sensor_get_accel(float *acc)
 {
-	acc[0] = inertial_sensor->acc[0];
-	acc[1] = inertial_sensor->acc[1];
-	acc[2] = inertial_sensor->acc[2];
+	vector_set(acc, inertial_sensor->acc[0], inertial_sensor->acc[1], inertial_sensor->acc[2]);
 }
 
 void inertial_sensor_get_gyro(float *gyro)
 {
-	gyro[0] = inertial_sensor->gyro[0];
-	gyro[1] = inertial_sensor->gyro[1];
-	gyro[2] = inertial_sensor->gyro[2];
+	vector_set(gyro, inertial_sensor->gyro[0], inertial_sensor->gyro[1], inertial_sensor->gyro[2]);
 }
 
 float inertial_sensor_get_acc_x()
@@ -73,9 +70,14 @@ void compass_register(struct compass_s* item)
     compass = item;
 }
 
-void compass_read(void)
+void compass_update(void)
 {
-	compass->read();
+	compass->update();
+}
+
+void compass_get_mag(float *mag)
+{
+	vector_set(mag, compass->mag[0], compass->mag[1], compass->mag[2]);
 }
 
 float compass_get_mag_x()
@@ -98,9 +100,9 @@ void baro_register(struct baro_s* item)
     baro = item;
 }
 
-void baro_read(void)
+void baro_update(void)
 {
-	baro->read();
+	baro->update();
 }
 
 float baro_get_press()

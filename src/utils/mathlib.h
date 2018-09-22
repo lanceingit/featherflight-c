@@ -9,3 +9,5 @@
 #define M_RAD_TO_DEG 		57.295779513082323
 #define M_PI_2_F		1.57079632f
 #define M_TWOPI_F		6.28318531f
+
+float inv_sqrt(float x);

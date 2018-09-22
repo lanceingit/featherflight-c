@@ -12,7 +12,7 @@
 typedef float (get_float_func)(void);
 typedef void (get_vector_3f_func)(float v[3]);
 typedef bool (init_func)(void);
-typedef void (read_func)(void);
+typedef void (update_func)(void);
 typedef bool (read_status_func)(void);
 typedef void (set_status_func)(void);
 
@@ -25,9 +25,9 @@ struct inertial_sensor_s
     float acc[3];
     float gyro[3];
 
-	struct LowPassFilter2p	accel_filter_x;
-	struct LowPassFilter2p	accel_filter_y;
-	struct LowPassFilter2p	accel_filter_z;
+	struct LowPassFilter2p	acc_filter_x;
+	struct LowPassFilter2p	acc_filter_y;
+	struct LowPassFilter2p	acc_filter_z;
 	struct LowPassFilter2p	gyro_filter_x;
 	struct LowPassFilter2p	gyro_filter_y;
 	struct LowPassFilter2p	gyro_filter_z;
@@ -36,7 +36,7 @@ struct inertial_sensor_s
 
     //method
     init_func* init;
-    read_func* read;
+    update_func* update;
 };
 
 struct compass_s
@@ -46,7 +46,7 @@ struct compass_s
     
     //method
     init_func* init;
-    read_func* read;
+    update_func* update;
 
     get_float_func* get_mag_x;
     get_float_func* get_mag_y;
@@ -64,7 +64,7 @@ struct baro_s
 
     //method
     init_func* init;
-    read_func* read;
+    update_func* update;
 
     get_float_func* get_press;
     get_float_func* get_altitude;
@@ -72,7 +72,7 @@ struct baro_s
 };
 
 void inertial_sensor_register(struct inertial_sensor_s* item);
-void inertial_sensor_read(void);
+void inertial_sensor_update(void);
 void inertial_sensor_get_acc(float *acc);
 void inertial_sensor_get_gyro(float *gyro);
 float inertial_sensor_get_acc_x(void);
@@ -85,13 +85,14 @@ bool inertial_sensor_ready(void);
 void inertial_sensor_set_ready(void);
 
 void compass_register(struct compass_s* item);
-void compass_read(void);
+void compass_update(void);
+void compass_get_mag(float *mag);
 float compass_get_mag_x(void);
 float compass_get_mag_y(void);
 float compass_get_mag_z(void);
 
 void baro_register(struct baro_s* item);
-void baro_read(void);
+void baro_update(void);
 float baro_get_press(void);
 float baro_get_altitude(void);
 float baro_get_temp(void);

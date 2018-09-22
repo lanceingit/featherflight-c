@@ -125,6 +125,7 @@ enum accel_fsr_e {
 struct mpu6050_s mpu6050 = {
 	.heir = {
 		.init = &mpu6050_init,
+		.update = &mpu6050_update,
 		.read = &mpu6050_read,
 	},
 };
@@ -134,9 +135,9 @@ static struct mpu6050_s* this=&mpu6050;
 
 bool mpu6050_init(enum Rotation r)
 {
-	lowPassFilter2p_init(&this->heir.accel_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.accel_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.accel_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lowPassFilter2p_init(&this->heir.acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
 	lowPassFilter2p_init(&this->heir.gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
 	lowPassFilter2p_init(&this->heir.gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
 	lowPassFilter2p_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
@@ -191,9 +192,7 @@ bool mpu6050_config(void)
     return true;
 }
 
-
-
-void mpu6050_read()
+void mpu6050_update()
 {
     uint8_t buf[14];
 
@@ -209,9 +208,9 @@ void mpu6050_read()
 
     rotate_3f(this->heir.rotation, &x_in_new, &y_in_new, &z_in_new);
 
-    this->heir.acc[0] = lowPassFilter2p_apply(&this->heir.accel_filter_x, x_in_new);
-    this->heir.acc[1] = lowPassFilter2p_apply(&this->heir.accel_filter_y, y_in_new);
-    this->heir.acc[2] = lowPassFilter2p_apply(&this->heir.accel_filter_z, z_in_new);
+    this->heir.acc[0] = lowPassFilter2p_apply(&this->heir.acc_filter_x, x_in_new);
+    this->heir.acc[1] = lowPassFilter2p_apply(&this->heir.acc_filter_y, y_in_new);
+    this->heir.acc[2] = lowPassFilter2p_apply(&this->heir.acc_filter_z, z_in_new);
     
     
     float x_gyro_in_new = (float)((int16_t)((buf[8] << 8) | buf[9]))*(0.0174532 / 16.4);
@@ -235,7 +234,7 @@ void mpu6050_read()
 	this->update = true;
 }
 
-bool mpu6050_update()
+bool mpu6050_is_update()
 {
 	return this->update;
 }

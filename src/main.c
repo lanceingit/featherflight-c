@@ -11,13 +11,14 @@
 #include "att_est_q.h"
 #include "timer.h"
 #include "pref.h"
+#include "vector.h"
 
-static uint64_t last_mpu6050_updata_time = 0;
-static uint64_t last_hmc5883_updata_time = 0;
-static uint64_t last_ms5611_updata_time = 0;
-static uint64_t last_heartbeat_updata_time = 0;
-static uint64_t last_imu_updata_time = 0;
-static uint64_t last_att_updata_time = 0;
+static uint64_t last_inertial_sensor_update_time = 0;
+static uint64_t last_compass_update_time = 0;
+static uint64_t last_baro_update_time = 0;
+static uint64_t last_heartbeat_update_time = 0;
+static uint64_t last_imu_update_time = 0;
+static uint64_t last_att_update_time = 0;
 static uint64_t last_att_run_time = 0;
 
 
@@ -119,52 +120,47 @@ void linkSendTask(void)
     uint8_t system_id=2;
     uint8_t component_id=1;    
 
-    if(Timer_getTime() - last_heartbeat_updata_time > 1000*1000)
+    if(Timer_getTime() - last_heartbeat_update_time > 1000*1000)
     {
         mavlink_msg_heartbeat_pack(system_id, component_id, &msg,
                                        MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_PX4, 
                                        0, 
                                        0, MAV_STATE_STANDBY);  
 
-        link_mavlink_msg_send(msg);
-        last_heartbeat_updata_time = Timer_getTime();
+        link_mavlink_msg_send(&msg);
+        last_heartbeat_update_time = Timer_getTime();
     }
     
-    if(Timer_getTime() - last_imu_updata_time > 20*1000)
+    if(Timer_getTime() - last_imu_update_time > 20*1000)
     {
         mavlink_msg_highres_imu_pack(system_id, component_id, &msg,
                                Timer_getTime(),
-                               mpu6050_get_acc_x(), mpu6050_get_acc_y(), mpu6050_get_acc_z(),
-                               mpu6050_get_gyro_x(),mpu6050_get_gyro_y(),mpu6050_get_gyro_z(),
-                               hmc5883_get_mag_x(), hmc5883_get_mag_y(), hmc5883_get_mag_z(),
-                                ms5611_get_press(), 0, ms5611_get_altitude(), ms5611_get_temp(),
+                               inertial_sensor_get_acc_x(), inertial_sensor_get_acc_y(), inertial_sensor_get_acc_z(),
+                               inertial_sensor_get_gyro_x(),inertial_sensor_get_gyro_y(),inertial_sensor_get_gyro_z(),
+                               compass_get_mag_x(), compass_get_mag_y(), compass_get_mag_z(),
+                               baro_get_press(), 0, baro_get_altitude(), baro_get_temp(),
                                0xFFFF);
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
 
-        float x=mpu6050_get_acc_x();
-        float y=mpu6050_get_acc_y();
-        float z=mpu6050_get_acc_z();
+        float v[3];
+        inertial_sensor_get_acc(v);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "acc_len",
-                               sqrt(x*x+y*y+z*z));
-        link_mavlink_msg_send(msg);
+                               vector_length(v));
+        link_mavlink_msg_send(&msg);
 
-        x=hmc5883_get_mag_x();
-        y=hmc5883_get_mag_y();
-        z=hmc5883_get_mag_z();
+        compass_get_mag(v);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "mag_len",
-                               sqrt(x*x+y*y+z*z));
-        link_mavlink_msg_send(msg);
+                               vector_length(v));
+        link_mavlink_msg_send(&msg);
 
-
-
-        last_imu_updata_time = Timer_getTime();
+        last_imu_update_time = Timer_getTime();
     }
     
-    if(Timer_getTime() - last_att_updata_time > 50*1000)
+    if(Timer_getTime() - last_att_update_time > 50*1000)
     {
         mavlink_msg_attitude_pack(system_id, component_id, &msg,
                                Timer_getTime(), 
@@ -173,41 +169,41 @@ void linkSendTask(void)
                                att_get_yaw(),
                                0,0,0         
                                  );
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
 
 
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "bias_x",
                                att_get_bias_x());
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "bias_y",
                                att_get_bias_y());
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
 
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "corr_acc_x",
                                att_get_corr_acc_x());
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "corr_acc_y",
                                att_get_corr_acc_y());
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
 
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "corr_all_x",
                                att_get_corr_all_x());
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "corr_all_y",
                                att_get_corr_all_y());
-        link_mavlink_msg_send(msg);
+        link_mavlink_msg_send(&msg);
 
         last_att_updata_time = Timer_getTime();
     }
@@ -218,34 +214,34 @@ void linkRecvTask(void)
 {
 	mavlink_message_t msg;
 
-	if(link_mavlink_recv(msg))
+	if(link_mavlink_recv(&msg))
 	{
-        mavlink_log_handle(msg);
+        mavlink_log_handle(&msg);
 	}
 }
 
 void sensorTask(void)
 {        
-    if(Timer_getTime() - last_mpu6050_updata_time > 1000)
+    if(Timer_getTime() - last_inertial_sensor_update_time > 1000)
     {        
-        inertial_sensor_read();
-        last_mpu6050_updata_time = Timer_getTime();
+        inertial_sensor_update();
+        last_inertial_sensor_update_time = Timer_getTime();
     }
-    if(Timer_getTime() - last_hmc5883_updata_time > (1000000 / 150))
+    if(Timer_getTime() - last_compass_update_time > (1000000 / 150))
     {        
-        compass_read();
-        last_hmc5883_updata_time = Timer_getTime();
+        compass_update();
+        last_compass_update_time = Timer_getTime();
     }
-    if(Timer_getTime() - last_ms5611_updata_time > 25000)
+    if(Timer_getTime() - last_baro_update_time > 25000)
     {
-        baro_read();
-        last_ms5611_updata_time = Timer_getTime();
+        baro_update();
+        last_baro_update_time = Timer_getTime();
     }
 }
 
 void attTask(void)
 {
-	if(inertialSensor_update())
+	if(inertialSensor_is_update())
 	{
 		pref_begin(attElapsed);
 		att_run();
@@ -265,22 +261,18 @@ void gyro_cal(void)
 		float accel_end[3];
 		float accel_diff[3];
 
-		inertial_sensor_read();
+		inertial_sensor_update();
 		inertial_sensor_get_acc(accel_start);
-        memset(gyro_sum, 0, sizeof(gyro_sum));
+        vector_zero(gyro_sum);
         for(uint8_t i=0; i<50; i++) {
         	inertial_sensor_read();
     		inertial_sensor_get_gyro(gyro);
-    		gyro_sum[0] += gyro[0];
-    		gyro_sum[1] += gyro[1];
-    		gyro_sum[2] += gyro[2];
+            vector_add(gyro_sum, gyro, gyro_sum);
     		Timer_delayUs(10*1000);
         }
         inertial_sensor_read();
 		inertial_sensor_get_acc(accel_end);
-        for(uint8_t i=0; i<3; i++) {
-		    accel_diff[i] = accel_start[i] - accel_end[i];
-        }
+        vector_sub(accel_start, accel_end, accel_diff);
 		if(vocter_length(accel_diff) >  0.2f) continue;
 
 		inertial_sensor_set_gyro_offset_x(gyro_sum[0]/50);

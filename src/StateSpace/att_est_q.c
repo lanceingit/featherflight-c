@@ -83,17 +83,14 @@ bool att_est_q_init(void)
 {
     inertial_sensor_get_acc(this->acc);
 
-	Vector k;
-    vector_copy(k, vector_reverse_cal(this->acc));
-    vector_normalized(k);
+	Vector k = vector_normalized(vector_reverse(this->acc));
 
 	if (vector_length(this->acc) < 0.01f || vector_length(this->acc) > 12) {
 		LINK_DEBUG("init: degenerate accel!");
 	}
 
 	// 'i' is Earth X axis (North) unit vector in body frame, orthogonal with 'k'
-    Vector i;
-    vector_set(i, 1, 0 ,0);
+    Vector i = {1, 0, 0};
 
 	if(_use_compass)
     {
@@ -104,17 +101,14 @@ bool att_est_q_init(void)
             LINK_DEBUG("init: degenerate mag!");
         }
         
-        vector_sub(i, this->mag, vector_mul_cal(k, vector_scalar_cal(this->mag, k)));
-
-        vector_normalized(i);
+        i = vector_normalized(vector_sub(this->mag, vector_mul(k, vector_scalar(this->mag, k))));
     }
     
 
 
 	// 'j' is Earth Y axis (East) unit vector in body frame, orthogonal with 'k' and 'i'
-	Vector j;
-    vector_cross(j, k, i);
-
+	Vector j = vector_cross(k, i);;
+    
 	// Fill rotation matrix
 	Matrix<3, 3> R;
 	R.set_row(0, i);
@@ -150,13 +144,13 @@ void att_est_q_run()
 {
 	if(inertial_sensor_ready())
 	{
-		this->gyro[0] = lowPassFilter2p_apply(&this->gyro_filter_x, inertial_sensor_get_gyro_x());
-		this->gyro[1] = lowPassFilter2p_apply(&this->gyro_filter_y, inertial_sensor_get_gyro_y());
-		this->gyro[2] = lowPassFilter2p_apply(&this->gyro_filter_z, inertial_sensor_get_gyro_z());
+		this->gyro.x = lowPassFilter2p_apply(&this->gyro_filter_x, inertial_sensor_get_gyro_x());
+		this->gyro.y = lowPassFilter2p_apply(&this->gyro_filter_y, inertial_sensor_get_gyro_y());
+		this->gyro.z = lowPassFilter2p_apply(&this->gyro_filter_z, inertial_sensor_get_gyro_z());
 
-		this->acc[0] = lowPassFilter2p_apply(&this->acc_filter_x, inertial_sensor_get_acc_x());
-		this->acc[1] = lowPassFilter2p_apply(&this->acc_filter_y, inertial_sensor_get_acc_y());
-		this->acc[2] = lowPassFilter2p_apply(&this->acc_filter_z, inertial_sensor_get_acc_z());
+		this->acc.x = lowPassFilter2p_apply(&this->acc_filter_x, inertial_sensor_get_acc_x());
+		this->acc.y = lowPassFilter2p_apply(&this->acc_filter_y, inertial_sensor_get_acc_y());
+		this->acc.z = lowPassFilter2p_apply(&this->acc_filter_z, inertial_sensor_get_acc_z());
 
 		if (vector_length(this->acc) < 0.01f) {
 			LINK_DEBUG("WARNING: degenerate accel!");
@@ -195,13 +189,13 @@ void att_est_q_run()
 		Vector euler;
         quaternion_to_euler(this->q, euler);
 
-		this->roll_rate = this->rate[0];
-		this->pitch_rate = this->rate[1];
-		this->yaw_rate = this->rate[2];
+		this->roll_rate = this->rate.x;
+		this->pitch_rate = this->rate.y;
+		this->yaw_rate = this->rate.z;
 
-	    this->roll = euler[0];
-	    this->pitch = euler[1];
-	    this->yaw = euler[2];
+	    this->roll = euler.x;
+	    this->pitch = euler.y;
+	    this->yaw = euler.z;
 	}
 
 }
@@ -227,7 +221,7 @@ bool Att_Est_Q::update(float dt)
 		float mag_err = _wrap_pi(atan2f(mag_earth[1], mag_earth[0]) - this->mag_decl);
 
 		// Project magnetometer correction to body frame
-        vector_add(corr, corr, vector_scalar_cal(quaternion_conjugate_inversed_cal(this->q, vector_get(0.0f, 0.0f, -mag_err)), this->w_mag));
+        corr = vector_add(corr, vector_scalar(quaternion_conjugate_inversed_cal(this->q, vector_get(0.0f, 0.0f, -mag_err)), this->w_mag));
 	}
 
 	quaternion_normalize(this->q);
@@ -238,29 +232,29 @@ bool Att_Est_Q::update(float dt)
 	// Vector<3> k = _q.conjugate_inversed(Vector<3>(0.0f, 0.0f, 1.0f));
 	// Optimized version with dropped zeros
 	Vector k;
-    vector_set(k, 2.0f * (this->q[1] * this->q[3] - this->q[0] * this->q[2]),
-		          2.0f * (this->q[2] * this->q[3] + this->q[0] * this->q[1]),
-		          (this->q[0] * this->q[0] - this->q[1] * this->q[1] - this->q[2] * this->q[2] + this->q[3] * this->q[3]));
+	k = vector_set(2.0f * (this->q[1] * this->q[3] - this->q[0] * this->q[2]),
+		           2.0f * (this->q[2] * this->q[3] + this->q[0] * this->q[1]),
+		           (this->q[0] * this->q[0] - this->q[1] * this->q[1] - this->q[2] * this->q[2] + this->q[3] * this->q[3])
+			   );
 
 
 
-    vector_add(corr, corr, vector_mul_cal(vector_cross_cal(k, vector_normalized_cal(acc)), this->w_accel));
+    corr = vector_add(corr, vector_mul(vector_cross(k, vector_normalized(acc)), this->w_accel));
 	//_corr_acc = corr;
 
 	// Gyro bias estimation
 	if (spinRate < 0.175f) {
-        vector_add(this->gyro_bias, this->gyro_bias, vector_scalar_cal(corr, (_w_gyro_bias * dt)));
+        this->gyro_bias = vector_add(this->gyro_bias, vector_scalar(corr, (_w_gyro_bias * dt)));
 
 		for (int i = 0; i < 3; i++) {
 			this->gyro_bias(i) = math::constrain(_gyro_bias(i), -_bias_max, _bias_max);
 		}
-
 	}
 
-    vector_add(this->rate, this->gyro, this->gyro_bias);
+    this->rate = vector_add(this->gyro, this->gyro_bias);
 
 	// Feed forward gyro
-    vector_add(corr, corr, this->rate);
+    corr = vector_add(corr, this->rate);
 
 	// Apply correction to state
 	_q += _q.derivative(corr) * dt;
@@ -273,7 +267,7 @@ bool Att_Est_Q::update(float dt)
 		// Reset quaternion to last good state
 		_q = q_last;
 		_rates.zero();
-        vector_zero(this->gyro_bias);
+        this->gyro_bias = vector_set(0,0,0);
 		LINK_DEBUG("q definite");
 		return false;
 	}

@@ -22,7 +22,7 @@
 struct hmc5883_s hmc5883 = {
 	.heir = {
 		.init = &hmc5883_init,
-		.read = &hmc5883_read,
+		.update = &hmc5883_update,
 	},
 };
 
@@ -47,7 +47,7 @@ bool hmc5883_init(void)
    
 }
 
-void hmc5883_read(void)
+void hmc5883_update(void)
 {
     uint8_t buf[6];
 

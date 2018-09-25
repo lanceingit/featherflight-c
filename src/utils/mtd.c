@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "mtd.h"
@@ -66,7 +67,7 @@ void mtd_test()
 
 void mtd_write(uint8_t* data, uint16_t len)
 {
-	if(get_space() > len)
+	if(mtd_get_space() > len)
 	{
 		for(uint16_t i=0; i<len; i++)
 		{

@@ -11,3 +11,4 @@
 #define M_TWOPI_F		6.28318531f
 
 float inv_sqrt(float x);
+float constrain(float val, float min_val, float max_val);

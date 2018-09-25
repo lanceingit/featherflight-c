@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <stdint.h>
 
 void Timer_init(void);
 void Timer_disable(void);

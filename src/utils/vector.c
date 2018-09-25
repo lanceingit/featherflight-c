@@ -2,10 +2,7 @@
 #include "vector.h"
 
 static Vector tmp0;
-static Vector tmp1;
-static Vector tmp2;
-static Vector tmp3;
-static Vector tmp4;
+
 
 Vector vector_set(float x, float y, float z)
 {
@@ -21,6 +18,8 @@ Vector vector_cross(Vector v1,  Vector v2)
     tmp0.x =  v1.y*v2.z - v1.z*v2.y;
     tmp0.y = -v1.x*v2.z + v1.z*v2.x;
     tmp0.z =  v1.x*v2.y - v1.y*v2.x;    
+
+    return tmp0;
 }
 
 float vector_scalar(Vector v1,  Vector v2)
@@ -33,6 +32,8 @@ Vector vector_add(Vector v1,  Vector v2)
     tmp0.x = v1.x + v2.x;
     tmp0.y = v1.y + v2.y;
     tmp0.z = v1.z + v2.z;
+
+    return tmp0;
 }
 
 Vector vector_sub(Vector v1,  Vector v2)
@@ -40,6 +41,8 @@ Vector vector_sub(Vector v1,  Vector v2)
     tmp0.x = v1.x - v2.x;
     tmp0.y = v1.y - v2.y;
     tmp0.z = v1.z - v2.z;    
+
+    return tmp0;
 }
 
 Vector vector_mul(Vector v, float s)

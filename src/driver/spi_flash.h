@@ -1,6 +1,6 @@
 #pragma once
 
-
+#define M25P16_PAGESIZE 256
 
 typedef struct flashGeometry_s {
     uint16_t sectors; // Count of the number of erasable blocks on the device

@@ -1,50 +1,56 @@
 #include "quaternion.h"
 #include "vector.h"
+#include "matrix.h"
 #include <math.h>
 
 
 static Quaternion tmp0;
-static Quaternion tmp1;
-static Quaternion tmp2;
-static Quaternion tmp3;
-static Quaternion tmp4;
 
 static Vector vtmp0;
+static Matrix mtmp0;
 
-void quaternion_set(Quaternion q, float w, float x, float y, float z)
+Quaternion quaternion_set(float w, float x, float y, float z)
 {
-    q[0] = w;
-    q[1] = x;
-    q[2] = y;
-    q[3] = z;
+    tmp0.w = w;
+    tmp0.x = x;
+    tmp0.y = y;
+    tmp0.z = z;
+
+    return tmp0;
 }
 
-void quaternion_copy(Quaternion q_to, Quaternion q_from)
+Quaternion quaternion_add(Quaternion q1, Quaternion q2)
 {
-    q_to[0] = q_from[0];
-    q_to[1] = q_from[1];
-    q_to[2] = q_from[2];
-    q_to[3] = q_from[3];
-}
-
-void quaternion_mul(Quaternion q_out, Quaternion q1, Quaternion q2)
-{
-    q_out[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
-    q_out[0] = q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2];
-    q_out[0] = q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1];
-    q_out[0] = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0];    
-}
-Quaternion* quaternion_mul_cal(Quaternion q1, Quaternion q2)
-{
-    tmp0[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
-    tmp0[0] = q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2];
-    tmp0[0] = q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1];
-    tmp0[0] = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0];
+    tmp0.w = q1.w + q2.w;
+    tmp0.x = q1.x + q2.x;
+    tmp0.y = q1.y + q2.y;
+    tmp0.z = q1.z + q2.z;
 
     return tmp0;    
 }
 
-Quaternion* quaternion_div_cal(Quaternion q1, Quaternion q2)
+Quaternion quaternion_mul(Quaternion q1, Quaternion q2)
+{
+    tmp0.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+    tmp0.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+    tmp0.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
+    tmp0.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+
+    return tmp0;    
+}
+
+Quaternion quaternion_scaler(Quaternion q, float s)
+{
+    tmp0.w = q.w * s;
+    tmp0.x = q.x * s;
+    tmp0.y = q.y * s;
+    tmp0.z = q.z * s;
+
+    return tmp0;    
+}
+
+Quaternion quaternion_div(Quaternion q1, Quaternion q2)
+{
     // float norm = q.length_squared();
     // return Quaternion(
     //         (  data[0] * q.data[0] + data[1] * q.data[1] + data[2] * q.data[2] + data[3] * q.data[3]) / norm,
@@ -52,87 +58,147 @@ Quaternion* quaternion_div_cal(Quaternion q1, Quaternion q2)
     //         (- data[0] * q.data[2] + data[1] * q.data[3] + data[2] * q.data[0] - data[3] * q.data[1]) / norm,
     //         (- data[0] * q.data[3] - data[1] * q.data[2] + data[2] * q.data[1] + data[3] * q.data[0]) / norm
     // );
+    
+    return tmp0;
 }
 
-void quaternion_from_yaw(Quaternion q, float yaw) 
+Quaternion quaternion_from_yaw(float yaw) 
 {
-    q[0] = cosf(yaw / 2.0f);
-    q[1] = 0.0f;
-    q[2] = 0.0f;
-    q[3] = sinf(yaw / 2.0f);
+    tmp0.w = cosf(yaw / 2.0f);
+    tmp0.x = 0.0f;
+    tmp0.y = 0.0f;
+    tmp0.z = sinf(yaw / 2.0f);
+    
+    return tmp0;
 }
 
-float quaternion_length(Quaternion q)
+Quaternion quaternion_from_matrix(Matrix m) 
 {
-    return (sqrtf(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]));
-}
+    if(!(m.row == 4 && m.column == 1)) return tmp0;
 
-Quaternion* quaternion_normalize(Quaternion q)
-{
-    float length = quaternion_length(q);
-
-    q[0] /= length;
-    q[1] /= length;
-    q[2] /= length;
-    q[3] /= length;
-
-    tmp0[0] = q[0];
-    tmp0[1] = q[1];
-    tmp0[2] = q[2];  
-    tmp0[3] = q[3];  
+    tmp0.w = MAT(m, 0, 0);
+    tmp0.x = MAT(m, 1, 0);
+    tmp0.y = MAT(m, 2, 0);
+    tmp0.z = MAT(m, 3, 0);
 
     return tmp0;
 }
 
-void quaternion_conjugate(Vector v_out, Quaternion q, Vector v)
+Quaternion quaternion_from_dcm(Matrix m) 
 {
-    float q0q0 = q[0] * q[0];
-    float q1q1 = q[1] * q[1];
-    float q2q2 = q[2] * q[2];
-    float q3q3 = q[3] * q[3];
+    if(!(m.row == 3 && m.column == 3)) return tmp0;
 
-    v_out[0] = v[0] * (q0q0 + q1q1 - q2q2 - q3q3) +
-               v[1] * 2.0f * (q[1] * q[2] - q[0] * q[3]) +
-               v[2] * 2.0f * (q[0] * q[2] + q[1] * q[3]);
+    float t = matrix_trace(m);
+    if (t > 0.0f) {
+        t = sqrtf(1.0f + t);
+        tmp0.w = 0.5f * t;
+        t = 0.5f / t;
+        tmp0.x = (MAT(m,2,1) - MAT(m,1,2)) * t;
+        tmp0.y = (MAT(m,0,2) - MAT(m,2,0)) * t;
+        tmp0.z = (MAT(m,1,0) - MAT(m,0,1)) * t;
+    } else if (MAT(m,0,0) > MAT(m,1,1) && MAT(m,0,0) > MAT(m,2,2)) {
+        t = sqrt(1.0f + MAT(m,0,0) - MAT(m,1,1) - MAT(m,2,2));
+        tmp0.x = 0.5f * t;
+        t = 0.5f / t;
+        tmp0.w = (MAT(m,2,1) - MAT(m,1,2)) * t;
+        tmp0.y = (MAT(m,1,0) + MAT(m,0,1)) * t;
+        tmp0.z = (MAT(m,0,2) + MAT(m,2,0)) * t;
+    } else if (MAT(m,1,1) > MAT(m,2,2)) {
+        t = sqrt(1.0f - MAT(m,0,0) + MAT(m,1,1) - MAT(m,2,2));
+        tmp0.y = 0.5f * t;
+        t = 0.5f / t;
+        tmp0.w = (MAT(m,0,2) - MAT(m,2,0)) * t;
+        tmp0.x = (MAT(m,1,0) + MAT(m,0,1)) * t;
+        tmp0.z = (MAT(m,2,1) + MAT(m,1,2)) * t;
+    } else {
+        t = sqrt(1.0f - MAT(m,0,0) - MAT(m,1,1) + MAT(m,2,2));
+        tmp0.z = 0.5f * t;
+        t = 0.5f / t;
+        tmp0.w = (MAT(m,1,0) - MAT(m,0,1)) * t;
+        tmp0.x = (MAT(m,0,2) + MAT(m,2,0)) * t;
+        tmp0.y = (MAT(m,2,1) + MAT(m,1,2)) * t;
+    }
 
-    v_out[1] = v[0] * 2.0f * (q[1] * q[2] + q[0] * q[3]) +
-               v[1] * (q0q0 - q1q1 + q2q2 - q3q3) +
-               v[2] * 2.0f * (q[2] * q[3] - q[0] * q[1]);
-
-    v_out[2] = v[0] * 2.0f * (q[1] * q[3] - q[0] * q[2]) +
-               v[1] * 2.0f * (q[0] * q[1] + q[2] * q[3]) +
-               v[2] * (q0q0 - q1q1 - q2q2 + q3q3);
+    return tmp0;
 }
 
-Vector* quaternion_conjugate_inversed_cal(Quaternion q, Vector v)
+float quaternion_length(Quaternion q)
 {
-    float q0q0 = q[0] * q[0];
-    float q1q1 = q[1] * q[1];
-    float q2q2 = q[2] * q[2];
-    float q3q3 = q[3] * q[3];
-
-    vtmp0[0] = v[0] * (q0q0 + q1q1 - q2q2 - q3q3) +
-               v[1] * 2.0f * (q[1] * q[2] + q[0] * q[3]) +
-               v[2] * 2.0f * (q[1] * q[3] - q[0] * q[2]);
-   
-    vtmp0[1] = v[0] * 2.0f * (q[1] * q[2] - q[0] * q[3]) +
-               v[1] * (q0q0 - q1q1 + q2q2 - q3q3) +
-               v[2] * 2.0f * (q[2] * q[3] + q[0] * q[1]);
-   
-    vtmp0[2] = v[0] * 2.0f * (q[1] * q[3] + q[0] * q[2]) +
-               v[1] * 2.0f * (q[2] * q[3] - q[0] * q[1]) +
-               v[2] * (q0q0 - q1q1 - q2q2 + q3q3);
+    return (sqrtf(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z));
 }
 
-Quaternion* quaternion_derivative(Quaternion q, Vector v) 
+Quaternion quaternion_normalize(Quaternion q)
 {
-    float dataQ[] = {
-        data[0], -data[1], -data[2], -data[3],
-        data[1],  data[0], -data[3],  data[2],
-        data[2],  data[3],  data[0], -data[1],
-        data[3], -data[2],  data[1],  data[0]
+    float length = quaternion_length(q);
+
+    tmp0.w = q.w / length;
+    tmp0.x = q.x / length;
+    tmp0.y = q.y / length;  
+    tmp0.z = q.z / length;  
+
+    return tmp0;
+}
+
+Vector quaternion_conjugate(Quaternion q, Vector v)
+{
+    float q0q0 = q.w * q.w;
+    float q1q1 = q.x * q.x;
+    float q2q2 = q.y * q.y;
+    float q3q3 = q.z * q.z;
+
+    vtmp0.x = v.x * (q0q0 + q1q1 - q2q2 - q3q3) +
+              v.y * 2.0f * (q.x * q.y - q.w * q.z) +
+              v.z * 2.0f * (q.w * q.y + q.x * q.z);
+
+    vtmp0.y = v.x * 2.0f * (q.x * q.y + q.w * q.z) +
+              v.y * (q0q0 - q1q1 + q2q2 - q3q3) +
+              v.z * 2.0f * (q.y * q.z - q.w * q.x);
+
+    vtmp0.z = v.x * 2.0f * (q.x * q.z - q.w * q.y) +
+              v.y * 2.0f * (q.w * q.x + q.y * q.z) +
+              v.z * (q0q0 - q1q1 - q2q2 + q3q3);
+
+    return vtmp0;
+}
+
+Vector quaternion_conjugate_inversed(Quaternion q, Vector v)
+{
+    float q0q0 = q.w * q.w;
+    float q1q1 = q.x * q.x;
+    float q2q2 = q.y * q.y;
+    float q3q3 = q.z * q.z;
+
+    vtmp0.x =  v.x * (q0q0 + q1q1 - q2q2 - q3q3) +
+               v.y * 2.0f * (q.x * q.y + q.w * q.z) +
+               v.z * 2.0f * (q.x * q.z - q.w * q.y);
+   
+    vtmp0.y =  v.x * 2.0f * (q.x * q.y - q.w * q.z) +
+               v.y * (q0q0 - q1q1 + q2q2 - q3q3) +
+               v.z * 2.0f * (q.y * q.z + q.w * q.x);
+   
+    vtmp0.z =  v.x * 2.0f * (q.x * q.z + q.w * q.y) +
+               v.y * 2.0f * (q.y * q.z - q.w * q.x) +
+               v.z * (q0q0 - q1q1 - q2q2 + q3q3);
+
+    return vtmp0;
+}
+
+Quaternion quaternion_derivative(Quaternion q, Vector v) 
+{
+    float Q_data[] = {
+        q.w, -q.x, -q.y, -q.z,
+        q.x,  q.w, -q.z,  q.y,
+        q.y,  q.z,  q.w, -q.x,
+        q.z, -q.y,  q.x,  q.w
     };
-    Matrix<4, 4> Q(dataQ);
-    Vector<4> v(0.0f, w.data[0], w.data[1], w.data[2]);
-    return Q * v * 0.5f;
+    Matrix Q = {4, 4, Q_data};
+
+    float V_data[] = {0.0f, v.x, v.y, v.z};
+    Matrix V = {4, 1, V_data};
+
+    mtmp0 = matrix_scalar(matrix_mul(Q, V), 0.5f);
+
+    tmp0 = quaternion_from_matrix(mtmp0);
+
+    return tmp0;
 }

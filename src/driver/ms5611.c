@@ -47,7 +47,7 @@
 struct ms5611_s ms5611 = {
 	.heir = {
 		.init = &ms5611_init,
-		.read = &ms5611_read,
+		.update = &ms5611_update,
 	},
 };
 
@@ -85,7 +85,7 @@ bool ms5611_init(void)
 }
 
 
-void ms5611_read()
+void ms5611_update()
 {
     if (this->collect_phase)
     {
@@ -109,7 +109,7 @@ void ms5611_read()
 
 				if (this->TEMP < -1500) {
 
-					int64_t f2 = POW2(TEMP + 1500);
+					int64_t f2 = POW2(this->TEMP + 1500);
 					OFF2 += 7 * f2;
 					SENS2 += 11 * f2 >> 1;
 				}

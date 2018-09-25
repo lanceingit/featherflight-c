@@ -1,4 +1,8 @@
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "pref.h"
+#include "timer.h"
 
 void pref_init(struct Pref* pref)
 {

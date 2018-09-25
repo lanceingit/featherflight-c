@@ -3,15 +3,13 @@
 #include <stdbool.h>
 #include "rotation.h"
 #include "LowPassFilter2p.h"
-
-#include "mpu6050.h"
-#include "hmc5883.h"
-#include "ms5611.h"
+#include "vector.h"
 
 
 typedef float (get_float_func)(void);
 typedef void (get_vector_3f_func)(float v[3]);
 typedef bool (init_func)(void);
+typedef bool (init_func_rocation)(enum Rotation r);
 typedef void (update_func)(void);
 typedef bool (read_status_func)(void);
 typedef void (set_status_func)(void);
@@ -21,6 +19,7 @@ struct inertial_sensor_s
 {
     //member
     bool ready;    
+    bool is_update;   
 
     float acc[3];
     float gyro[3];
@@ -35,7 +34,7 @@ struct inertial_sensor_s
     enum Rotation rotation;
 
     //method
-    init_func* init;
+    init_func_rocation* init;
     update_func* update;
 };
 
@@ -73,8 +72,8 @@ struct baro_s
 
 void inertial_sensor_register(struct inertial_sensor_s* item);
 void inertial_sensor_update(void);
-void inertial_sensor_get_acc(float *acc);
-void inertial_sensor_get_gyro(float *gyro);
+void inertial_sensor_get_acc(Vector* acc);
+void inertial_sensor_get_gyro(Vector* gyro);
 float inertial_sensor_get_acc_x(void);
 float inertial_sensor_get_acc_y(void);
 float inertial_sensor_get_acc_z(void);
@@ -83,10 +82,12 @@ float inertial_sensor_get_gyro_y(void);
 float inertial_sensor_get_gyro_z(void);
 bool inertial_sensor_ready(void);
 void inertial_sensor_set_ready(void);
+bool inertial_sensor_is_update(void);
+void inertial_sensor_clean_update(void);
 
 void compass_register(struct compass_s* item);
 void compass_update(void);
-void compass_get_mag(float *mag);
+void compass_get_mag(Vector* mag);
 float compass_get_mag_x(void);
 float compass_get_mag_y(void);
 float compass_get_mag_z(void);
@@ -99,3 +100,7 @@ float baro_get_temp(void);
 
 void sensor_init(void);
 
+
+#include "mpu6050.h"
+#include "hmc5883.h"
+#include "ms5611.h"

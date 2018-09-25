@@ -14,9 +14,9 @@ struct mpu6050_s
 extern struct mpu6050_s mpu6050;
 
 bool mpu6050_init(enum Rotation r);
-void mpu6050_read(void);
+void mpu6050_update(void);
 
-bool mpu6050_update(void);
+bool mpu6050_is_update(void);
 void mpu6050_clean_update(void);
 
 

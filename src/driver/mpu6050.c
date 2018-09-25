@@ -126,12 +126,12 @@ struct mpu6050_s mpu6050 = {
 	.heir = {
 		.init = &mpu6050_init,
 		.update = &mpu6050_update,
-		.read = &mpu6050_read,
 	},
 };
 
 static struct mpu6050_s* this=&mpu6050;
 
+static bool mpu6050_config(void);
 
 bool mpu6050_init(enum Rotation r)
 {
@@ -192,7 +192,7 @@ bool mpu6050_config(void)
     return true;
 }
 
-void mpu6050_update()
+void mpu6050_update(void)
 {
     uint8_t buf[14];
 

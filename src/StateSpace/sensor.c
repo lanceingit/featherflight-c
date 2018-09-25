@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include "sensor.h"
 #include "vector.h"
 
@@ -15,14 +17,14 @@ void inertial_sensor_update(void)
 	inertial_sensor->update();
 }
 
-void inertial_sensor_get_accel(float *acc)
+void inertial_sensor_get_acc(Vector* acc)
 {
-	vector_set(acc, inertial_sensor->acc[0], inertial_sensor->acc[1], inertial_sensor->acc[2]);
+	*acc = vector_set(inertial_sensor->acc[0], inertial_sensor->acc[1], inertial_sensor->acc[2]);
 }
 
-void inertial_sensor_get_gyro(float *gyro)
+void inertial_sensor_get_gyro(Vector* gyro)
 {
-	vector_set(gyro, inertial_sensor->gyro[0], inertial_sensor->gyro[1], inertial_sensor->gyro[2]);
+	*gyro = vector_set(inertial_sensor->gyro[0], inertial_sensor->gyro[1], inertial_sensor->gyro[2]);
 }
 
 float inertial_sensor_get_acc_x()
@@ -65,6 +67,16 @@ void inertial_sensor_set_ready(void)
 	inertial_sensor->ready = true;
 }
 
+bool inertial_sensor_is_update(void)
+{
+	return inertial_sensor->is_update;
+}
+
+void inertial_sensor_clean_update(void)
+{
+	inertial_sensor->is_update = false;
+}
+
 void compass_register(struct compass_s* item)
 {
     compass = item;
@@ -75,9 +87,9 @@ void compass_update(void)
 	compass->update();
 }
 
-void compass_get_mag(float *mag)
+void compass_get_mag(Vector* mag)
 {
-	vector_set(mag, compass->mag[0], compass->mag[1], compass->mag[2]);
+	*mag = vector_set(compass->mag[0], compass->mag[1], compass->mag[2]);
 }
 
 float compass_get_mag_x()
@@ -122,7 +134,7 @@ float baro_get_temp()
 
 void sensor_init(void)
 {
-	inertial_sensor->init();
+	inertial_sensor->init(ROTATION_NONE);   //TODO:
 	compass->init();
 	baro->init();	
 }

@@ -33,6 +33,24 @@ static bool att_est_q_update(float dt);
 
 bool att_est_q_init(void)
 {
+	lowPassFilter2p_init(&this->acc_filter_x, 625.0f, 30.0f);
+	lowPassFilter2p_init(&this->acc_filter_y, 625.0f, 30.0f);
+	lowPassFilter2p_init(&this->acc_filter_z, 625.0f, 30.0f);
+	lowPassFilter2p_init(&this->gyro_filter_x, 625.0f, 30.0f);
+	lowPassFilter2p_init(&this->gyro_filter_y, 625.0f, 30.0f);
+	lowPassFilter2p_init(&this->gyro_filter_z, 625.0f, 30.0f);
+    this->use_compass = false;
+    this->mag_decl_auto = true;
+    this->mag_decl = 0.0f;
+	this->last_time = 0;
+	this->dt_max = 0.02f;
+	this->bias_max = 10.05f;
+	this->w_accel = 0.2f;
+	this->w_mag = 0.1f;
+	this->w_gyro_bias = 0.1f;
+	this->heir.inited = false;    
+    
+    
     inertial_sensor_get_acc(0, &this->acc);
 
 	Vector k = vector_normalized(vector_reverse(this->acc));
@@ -59,7 +77,7 @@ bool att_est_q_init(void)
 
 
 	// 'j' is Earth Y axis (East) unit vector in body frame, orthogonal with 'k' and 'i'
-	Vector j = vector_cross(k, i);;
+	Vector j = vector_cross(k, i);
     
 	// Fill rotation matrix
 	float R_buf[3*3];			
@@ -142,8 +160,7 @@ void att_est_q_run(void)
 	}
 
 	{
-		Vector euler;
-        //        quaternion_to_euler(this->q, euler);    //TODO:
+        Vector euler = quaternion_to_euler(this->heir.q);  
 
 		this->heir.roll_rate = this->rate.x;
 		this->heir.pitch_rate = this->rate.y;
@@ -166,7 +183,7 @@ bool att_est_q_update(float dt)
 	Quaternion q_last = this->heir.q;
 
 	// Angular rate of correction
-	Vector corr;
+    this->heir.corr = vector_set(0,0,0);
 	float spinRate = vector_length(this->gyro);
 
 	if (this->use_compass) {
@@ -176,7 +193,7 @@ bool att_est_q_update(float dt)
 		float mag_err = _wrap_pi(atan2f(this->mag_earth.y, this->mag_earth.x) - this->mag_decl);
 
 		// Project magnetometer correction to body frame
-        corr = vector_add(corr, vector_mul(quaternion_conjugate_inversed(this->heir.q, vector_set(0.0f, 0.0f, -mag_err)), this->w_mag));
+        this->heir.corr = vector_add(this->heir.corr, vector_mul(quaternion_conjugate_inversed(this->heir.q, vector_set(0.0f, 0.0f, -mag_err)), this->w_mag));
 	}
 
 	this->heir.q = quaternion_normalize(this->heir.q);
@@ -194,12 +211,12 @@ bool att_est_q_update(float dt)
 
 
 
-    corr = vector_add(corr, vector_mul(vector_cross(k, vector_normalized(this->acc)), this->w_accel));
+    this->heir.corr = vector_add(this->heir.corr, vector_mul(vector_cross(k, vector_normalized(this->acc)), this->w_accel));
 	//_corr_acc = corr;
 
 	// Gyro bias estimation
 	if (spinRate < 0.175f) {
-        this->heir.gyro_bias = vector_add(this->heir.gyro_bias, vector_mul(corr, (this->w_gyro_bias * dt)));
+        this->heir.gyro_bias = vector_add(this->heir.gyro_bias, vector_mul(this->heir.corr, (this->w_gyro_bias * dt)));
 
         this->heir.gyro_bias.x = constrain(this->heir.gyro_bias.x, -this->bias_max, this->bias_max);
         this->heir.gyro_bias.y = constrain(this->heir.gyro_bias.y, -this->bias_max, this->bias_max);
@@ -209,10 +226,10 @@ bool att_est_q_update(float dt)
     this->rate = vector_add(this->gyro, this->heir.gyro_bias);
 
 	// Feed forward gyro
-    corr = vector_add(corr, this->rate);
+    this->heir.corr = vector_add(this->heir.corr, this->rate);
 
 	// Apply correction to state
-	this->heir.q = quaternion_normalize(quaternion_add(this->heir.q, quaternion_scaler(quaternion_derivative(this->heir.q, corr), dt)));
+	this->heir.q = quaternion_normalize(quaternion_add(this->heir.q, quaternion_scaler(quaternion_derivative(this->heir.q, this->heir.corr), dt)));
 
 	if (!(isfinite(this->heir.q.w) && isfinite(this->heir.q.x) &&
 			isfinite(this->heir.q.y) && isfinite(this->heir.q.z))) {

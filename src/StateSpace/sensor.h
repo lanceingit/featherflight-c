@@ -15,6 +15,7 @@ struct inertial_sensor_s
 
     Vector acc;
     Vector gyro;
+    Vector gyro_offset;
 
 	struct LowPassFilter2p	acc_filter_x;
 	struct LowPassFilter2p	acc_filter_y;
@@ -62,6 +63,9 @@ float inertial_sensor_get_acc_z(uint8_t ins);
 float inertial_sensor_get_gyro_x(uint8_t ins);
 float inertial_sensor_get_gyro_y(uint8_t ins);
 float inertial_sensor_get_gyro_z(uint8_t ins);
+void inertial_sensor_set_gyro_offset_x(uint8_t ins, float f);
+void inertial_sensor_set_gyro_offset_y(uint8_t ins, float f);
+void inertial_sensor_set_gyro_offset_z(uint8_t ins, float f);
 bool inertial_sensor_ready(uint8_t ins);
 void inertial_sensor_set_ready(uint8_t ins);
 bool inertial_sensor_is_update(uint8_t ins);

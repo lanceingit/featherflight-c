@@ -39,7 +39,7 @@ float matrix_trace(Matrix m)
 
 Matrix matrix_mul(Matrix m1, Matrix m2)
 {
-    if(!(m1.row==m2.column && m1.column==m2.row)) return tmp0;
+    if(!(m1.column==m2.row)) return tmp0;
 
     tmp0.row = m1.row;
     tmp0.column = m2.column;

@@ -143,7 +143,7 @@ bool mpu6050_init(enum Rotation r)
 	lowPassFilter2p_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
 	this->heir.ready = false;
 	this->heir.rotation = r;
-	this->update = false;
+	this->heir.is_update = false;
 	
 	return mpu6050_config();
 }
@@ -198,47 +198,44 @@ void mpu6050_update(void)
         return;
     }
 
-    float x_in_new  = (float)((int16_t)((this->buf[0] << 8) | this->buf[1]))*(9.80665f /2048);
-    float y_in_new = (float)((int16_t)((this->buf[2] << 8) | this->buf[3]))*(9.80665f /2048);
-    float z_in_new = (float)((int16_t)((this->buf[4] << 8) | this->buf[5]))*(9.80665f /2048);
+    Vector acc_new = {
+        (float)((int16_t)((this->buf[0] << 8) | this->buf[1]))*(9.80665f /2048),
+        (float)((int16_t)((this->buf[2] << 8) | this->buf[3]))*(9.80665f /2048),
+        (float)((int16_t)((this->buf[4] << 8) | this->buf[5]))*(9.80665f /2048),
+    };
+
+    rotate_3f(this->heir.rotation, &acc_new.x, &acc_new.y, &acc_new.z);
+
+    this->heir.acc.x = lowPassFilter2p_apply(&this->heir.acc_filter_x, acc_new.x);
+    this->heir.acc.y = lowPassFilter2p_apply(&this->heir.acc_filter_y, acc_new.y);
+    this->heir.acc.z = lowPassFilter2p_apply(&this->heir.acc_filter_z, acc_new.z);
     
+    Vector gyro_new = {
+        (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4),
+        (float)((int16_t)((this->buf[10] << 8) | this->buf[11]))*(0.0174532 / 16.4),
+        (float)((int16_t)((this->buf[12] << 8) | this->buf[13]))*(0.0174532 / 16.4),  
+    };
+    rotate_3f(this->heir.rotation, &gyro_new.x, &gyro_new.y, &gyro_new.z);
 
-    rotate_3f(this->heir.rotation, &x_in_new, &y_in_new, &z_in_new);
-
-    this->heir.acc.x = lowPassFilter2p_apply(&this->heir.acc_filter_x, x_in_new);
-    this->heir.acc.y = lowPassFilter2p_apply(&this->heir.acc_filter_y, y_in_new);
-    this->heir.acc.z = lowPassFilter2p_apply(&this->heir.acc_filter_z, z_in_new);
+    this->gyro_raw = gyro_new;
     
+    gyro_new = vector_sub(gyro_new, this->heir.gyro_offset);
     
-    float x_gyro_in_new = (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4);
-    float y_gyro_in_new = (float)((int16_t)((this->buf[10] << 8) | this->buf[11]))*(0.0174532 / 16.4);
-    float z_gyro_in_new = (float)((int16_t)((this->buf[12] << 8) | this->buf[13]))*(0.0174532 / 16.4);  
+	this->heir.gyro.x = lowPassFilter2p_apply(&this->heir.gyro_filter_x, gyro_new.x);
+	this->heir.gyro.y = lowPassFilter2p_apply(&this->heir.gyro_filter_y, gyro_new.y);
+	this->heir.gyro.z = lowPassFilter2p_apply(&this->heir.gyro_filter_z, gyro_new.z);
 
-    rotate_3f(this->heir.rotation, &x_gyro_in_new, &y_gyro_in_new, &z_gyro_in_new);
-
-    this->gyro_raw[0] = x_gyro_in_new;
-    this->gyro_raw[1] = y_gyro_in_new;
-    this->gyro_raw[2] = z_gyro_in_new;
-    
-    x_gyro_in_new -= this->gyro_offset[0];
-    y_gyro_in_new -= this->gyro_offset[1];
-    z_gyro_in_new -= this->gyro_offset[2];
-
-	this->heir.gyro.x = lowPassFilter2p_apply(&this->heir.gyro_filter_x, x_gyro_in_new);
-	this->heir.gyro.y = lowPassFilter2p_apply(&this->heir.gyro_filter_y, y_gyro_in_new);
-	this->heir.gyro.z = lowPassFilter2p_apply(&this->heir.gyro_filter_z, z_gyro_in_new);
-
-	this->update = true;
+	this->heir.is_update = true;
 }
 
 bool mpu6050_is_update()
 {
-	return this->update;
+	return this->heir.is_update;
 }
 
 void mpu6050_clean_update()
 {
-	this->update = false;
+	this->heir.is_update = false;
 }
 
 

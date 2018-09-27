@@ -63,6 +63,7 @@ int main()
 
     gyro_cal();
 
+    att_est_register(&att_est_q.heir);
     est_init();
     pref_init(&pref);
     pref_init(&attPref);
@@ -77,8 +78,8 @@ int main()
         linkRecvTask();
         sensorTask();
         attTask();
-        logTask();
-        mtd_sync();
+//        logTask();
+//        mtd_sync();
         
 
     //  Timer::delayUs(1*1000*1000);
@@ -253,7 +254,7 @@ void attTask(void)
 	}
 }
 
-void gyro_cal(void)
+void gyro_cal(void)         //TODO:put into sensor
 {
 	while(1)
 	{
@@ -277,9 +278,9 @@ void gyro_cal(void)
         accel_diff = vector_sub(accel_start, accel_end);
 		if(vector_length(accel_diff) >  0.2f) continue;
 
-        //		inertial_sensor_set_gyro_offset_x(gyro_sum[0]/50);   //TODO:
-//		inertial_sensor_set_gyro_offset_y(gyro_sum[1]/50);
-//		inertial_sensor_set_gyro_offset_z(gyro_sum[2]/50);
+		inertial_sensor_set_gyro_offset_x(0, gyro_sum.x/50);   
+		inertial_sensor_set_gyro_offset_y(0, gyro_sum.y/50);
+		inertial_sensor_set_gyro_offset_z(0, gyro_sum.z/50);
         
         return;
 	}

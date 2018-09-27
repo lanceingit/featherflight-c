@@ -53,10 +53,10 @@ Quaternion quaternion_div(Quaternion q1, Quaternion q2)
 {
     // float norm = q.length_squared();
     // return Quaternion(
-    //         (  data[0] * q.data[0] + data[1] * q.data[1] + data[2] * q.data[2] + data[3] * q.data[3]) / norm,
-    //         (- data[0] * q.data[1] + data[1] * q.data[0] - data[2] * q.data[3] + data[3] * q.data[2]) / norm,
-    //         (- data[0] * q.data[2] + data[1] * q.data[3] + data[2] * q.data[0] - data[3] * q.data[1]) / norm,
-    //         (- data[0] * q.data[3] - data[1] * q.data[2] + data[2] * q.data[1] + data[3] * q.data[0]) / norm
+    //         (  q.w * q.q.w + q.x * q.q.x + q.y * q.q.y + q.z * q.q.z) / norm,
+    //         (- q.w * q.q.x + q.x * q.q.w - q.y * q.q.z + q.z * q.q.y) / norm,
+    //         (- q.w * q.q.y + q.x * q.q.z + q.y * q.q.w - q.z * q.q.x) / norm,
+    //         (- q.w * q.q.z - q.x * q.q.y + q.y * q.q.x + q.z * q.q.w) / norm
     // );
     
     return tmp0;
@@ -120,6 +120,15 @@ Quaternion quaternion_from_dcm(Matrix m)
     }
 
     return tmp0;
+}
+
+Vector quaternion_to_euler(Quaternion q)
+{
+    vtmp0.x = atan2f(2.0f * (q.w * q.x + q.y * q.z), 1.0f - 2.0f * (q.x * q.x + q.y * q.y));
+    vtmp0.y = asinf(2.0f * (q.w * q.y - q.z * q.x));
+    vtmp0.z = atan2f(2.0f * (q.w * q.z + q.x * q.y), 1.0f - 2.0f * (q.y * q.y + q.z * q.z));
+    
+    return vtmp0;
 }
 
 float quaternion_length(Quaternion q)

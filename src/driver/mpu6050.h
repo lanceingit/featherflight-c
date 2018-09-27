@@ -6,9 +6,7 @@
 struct mpu6050_s
 {
 	struct inertial_sensor_s heir;
-	float gyro_raw[3];
-	float gyro_offset[3];
-	bool update;	
+	Vector gyro_raw;
     uint8_t buf[14];    
 };
 

@@ -31,6 +31,7 @@ struct att_est_s
 
     Quaternion	q;
     Vector gyro_bias;
+	Vector corr;
 };
 
 struct pos_est_s 

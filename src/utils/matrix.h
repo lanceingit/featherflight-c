@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "vector.h"
 
-#define MAT(m, r, c) (m.data[r*m.row + c])
+#define MAT(m, r, c) (m.data[r*m.column + c])
 
 typedef struct {
     uint8_t row;

@@ -26,7 +26,7 @@ struct hmc5883_s hmc5883 = {
 	},
 };
 
-static struct hmc5883_s* this;
+static struct hmc5883_s* this=&hmc5883;
 
 
 
@@ -34,7 +34,7 @@ bool hmc5883_init(void)
 {
     bool ack = false;
     uint8_t sig = 0;
-
+    
     ack = i2c_read(MAG_ADDRESS, 0x0A, 1, &sig);
     if (!ack || sig != 'H')
         return false;

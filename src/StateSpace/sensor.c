@@ -74,6 +74,21 @@ float inertial_sensor_get_gyro_z(uint8_t ins)
 	return inertial_sensor[ins]->gyro.z;
 }
 
+void inertial_sensor_set_gyro_offset_x(uint8_t ins, float f)
+{
+    inertial_sensor[ins]->gyro_offset.x = f;
+}
+
+void inertial_sensor_set_gyro_offset_y(uint8_t ins, float f)
+{
+    inertial_sensor[ins]->gyro_offset.y = f;
+}
+
+void inertial_sensor_set_gyro_offset_z(uint8_t ins, float f)
+{
+    inertial_sensor[ins]->gyro_offset.z = f;
+}
+
 bool inertial_sensor_ready(uint8_t ins)
 {
 	if(inertial_sensor_cnt >= INS_MAX) return false;
@@ -168,7 +183,7 @@ void sensor_init(void)
 {
 	uint8_t i;
 	for(i=0; i<inertial_sensor_cnt; i++) {
-		inertial_sensor[i]->init(ROTATION_NONE);   //TODO:
+		inertial_sensor[i]->init(ROTATION_ROLL_180_YAW_270);   //TODO:
 	}
 	for(i=0; i<compass_cnt; i++) {
 		compass[i]->init();

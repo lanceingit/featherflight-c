@@ -4,15 +4,7 @@
 #include "rotation.h"
 #include "LowPassFilter2p.h"
 #include "vector.h"
-
-
-typedef float (get_float_func)(void);
-typedef void (get_vector_3f_func)(float v[3]);
-typedef bool (init_func)(void);
-typedef bool (init_func_rocation)(enum Rotation r);
-typedef void (update_func)(void);
-typedef bool (read_status_func)(void);
-typedef void (set_status_func)(void);
+#include "func_type.h"
 
 
 struct inertial_sensor_s
@@ -21,8 +13,8 @@ struct inertial_sensor_s
     bool ready;    
     bool is_update;   
 
-    float acc[3];
-    float gyro[3];
+    Vector acc;
+    Vector gyro;
 
 	struct LowPassFilter2p	acc_filter_x;
 	struct LowPassFilter2p	acc_filter_y;
@@ -41,17 +33,11 @@ struct inertial_sensor_s
 struct compass_s
 {
     //member
-    float mag[3];
+    Vector mag;
     
     //method
     init_func* init;
     update_func* update;
-
-    get_float_func* get_mag_x;
-    get_float_func* get_mag_y;
-    get_float_func* get_mag_z;
-
-    get_vector_3f_func* get_mag;
 };
 
 struct baro_s
@@ -63,40 +49,36 @@ struct baro_s
 
     //method
     init_func* init;
-    update_func* update;
-
-    get_float_func* get_press;
-    get_float_func* get_altitude;
-    get_float_func* get_temp;       
+    update_func* update;     
 };
 
 void inertial_sensor_register(struct inertial_sensor_s* item);
-void inertial_sensor_update(void);
-void inertial_sensor_get_acc(Vector* acc);
-void inertial_sensor_get_gyro(Vector* gyro);
-float inertial_sensor_get_acc_x(void);
-float inertial_sensor_get_acc_y(void);
-float inertial_sensor_get_acc_z(void);
-float inertial_sensor_get_gyro_x(void);
-float inertial_sensor_get_gyro_y(void);
-float inertial_sensor_get_gyro_z(void);
-bool inertial_sensor_ready(void);
-void inertial_sensor_set_ready(void);
-bool inertial_sensor_is_update(void);
-void inertial_sensor_clean_update(void);
+void inertial_sensor_update(uint8_t ins);
+void inertial_sensor_get_acc(uint8_t ins, Vector* acc);
+void inertial_sensor_get_gyro(uint8_t ins, Vector* gyro);
+float inertial_sensor_get_acc_x(uint8_t ins);
+float inertial_sensor_get_acc_y(uint8_t ins);
+float inertial_sensor_get_acc_z(uint8_t ins);
+float inertial_sensor_get_gyro_x(uint8_t ins);
+float inertial_sensor_get_gyro_y(uint8_t ins);
+float inertial_sensor_get_gyro_z(uint8_t ins);
+bool inertial_sensor_ready(uint8_t ins);
+void inertial_sensor_set_ready(uint8_t ins);
+bool inertial_sensor_is_update(uint8_t ins);
+void inertial_sensor_clean_update(uint8_t ins);
 
 void compass_register(struct compass_s* item);
-void compass_update(void);
-void compass_get_mag(Vector* mag);
-float compass_get_mag_x(void);
-float compass_get_mag_y(void);
-float compass_get_mag_z(void);
+void compass_update(uint8_t ins);
+void compass_get_mag(uint8_t ins, Vector* mag);
+float compass_get_mag_x(uint8_t ins);
+float compass_get_mag_y(uint8_t ins);
+float compass_get_mag_z(uint8_t ins);
 
 void baro_register(struct baro_s* item);
-void baro_update(void);
-float baro_get_press(void);
-float baro_get_altitude(void);
-float baro_get_temp(void);
+void baro_update(uint8_t ins);
+float baro_get_press(uint8_t ins);
+float baro_get_altitude(uint8_t ins);
+float baro_get_temp(uint8_t ins);
 
 void sensor_init(void);
 

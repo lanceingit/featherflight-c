@@ -13,6 +13,7 @@
 #include "pref.h"
 #include "vector.h"
 #include "att_est_q.h"
+#include "est.h"
 
 static uint64_t last_inertial_sensor_update_time = 0;
 static uint64_t last_compass_update_time = 0;
@@ -62,7 +63,7 @@ int main()
 
     gyro_cal();
 
-    att_est_q_init();
+    est_init();
     pref_init(&pref);
     pref_init(&attPref);
     pref_init(&attElapsed);
@@ -136,22 +137,22 @@ void linkSendTask(void)
     {
         mavlink_msg_highres_imu_pack(system_id, component_id, &msg,
                                Timer_getTime(),
-                               inertial_sensor_get_acc_x(), inertial_sensor_get_acc_y(), inertial_sensor_get_acc_z(),
-                               inertial_sensor_get_gyro_x(),inertial_sensor_get_gyro_y(),inertial_sensor_get_gyro_z(),
-                               compass_get_mag_x(), compass_get_mag_y(), compass_get_mag_z(),
-                               baro_get_press(), 0, baro_get_altitude(), baro_get_temp(),
+                               inertial_sensor_get_acc_x(0), inertial_sensor_get_acc_y(0), inertial_sensor_get_acc_z(0),
+                               inertial_sensor_get_gyro_x(0),inertial_sensor_get_gyro_y(0),inertial_sensor_get_gyro_z(0),
+                               compass_get_mag_x(0), compass_get_mag_y(0), compass_get_mag_z(0),
+                               baro_get_press(0), 0, baro_get_altitude(0), baro_get_temp(0),
                                0xFFFF);
         link_mavlink_msg_send(&msg);
 
         Vector v;
-        inertial_sensor_get_acc(&v);
+        inertial_sensor_get_acc(0, &v);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "acc_len",
                                vector_length(v));
         link_mavlink_msg_send(&msg);
 
-        compass_get_mag(&v);
+        compass_get_mag(0, &v);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                Timer_getTime(),
                                "mag_len",
@@ -225,29 +226,29 @@ void sensorTask(void)
 {        
     if(Timer_getTime() - last_inertial_sensor_update_time > 1000)
     {        
-        inertial_sensor_update();
+        inertial_sensor_update(0);
         last_inertial_sensor_update_time = Timer_getTime();
     }
     if(Timer_getTime() - last_compass_update_time > (1000000 / 150))
     {        
-        compass_update();
+        compass_update(0);
         last_compass_update_time = Timer_getTime();
     }
     if(Timer_getTime() - last_baro_update_time > 25000)
     {
-        baro_update();
+        baro_update(0);
         last_baro_update_time = Timer_getTime();
     }
 }
 
 void attTask(void)
 {
-	if(inertial_sensor_is_update())
+	if(inertial_sensor_is_update(0))
 	{
 		pref_begin(&attElapsed);
-		att_est_q_run();
+		est_att_run();
 		pref_end(&attElapsed);
-		inertial_sensor_clean_update();
+		inertial_sensor_clean_update(0);
 		pref_interval(&attPref);
 	}
 }
@@ -262,17 +263,17 @@ void gyro_cal(void)
 		Vector accel_end;
 		Vector accel_diff;
 
-		inertial_sensor_update();
-		inertial_sensor_get_acc(&accel_start);
+		inertial_sensor_update(0);
+		inertial_sensor_get_acc(0,&accel_start);
         gyro_sum = vector_set(0,0,0);
         for(uint8_t i=0; i<50; i++) {
-        	inertial_sensor_update();
-    		inertial_sensor_get_gyro(&gyro);
+        	inertial_sensor_update(0);
+    		inertial_sensor_get_gyro(0,&gyro);
             gyro_sum = vector_add(gyro_sum, gyro);
     		Timer_delayUs(10*1000);
         }
-        inertial_sensor_update();
-		inertial_sensor_get_acc(&accel_end);
+        inertial_sensor_update(0);
+		inertial_sensor_get_acc(0,&accel_end);
         accel_diff = vector_sub(accel_start, accel_end);
 		if(vector_length(accel_diff) >  0.2f) continue;
 

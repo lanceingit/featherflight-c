@@ -3,138 +3,177 @@
 #include "sensor.h"
 #include "vector.h"
 
-static struct inertial_sensor_s* inertial_sensor;
-static struct compass_s* compass;
-static struct baro_s* baro;
+#define INS_MAX		3
+
+static struct inertial_sensor_s* inertial_sensor[INS_MAX];
+static uint8_t inertial_sensor_cnt=0;
+
+static struct compass_s* compass[INS_MAX];
+static uint8_t compass_cnt=0;
+
+static struct baro_s* baro[INS_MAX];
+static uint8_t baro_cnt=0;
 
 void inertial_sensor_register(struct inertial_sensor_s* item)
 {
-    inertial_sensor = item;
+	if(inertial_sensor_cnt >= INS_MAX) return;
+    inertial_sensor[inertial_sensor_cnt++] = item;
 }
 
-void inertial_sensor_update(void)
+void inertial_sensor_update(uint8_t ins)
 {
-	inertial_sensor->update();
+	if(inertial_sensor_cnt > INS_MAX) return;
+	inertial_sensor[ins]->update();
 }
 
-void inertial_sensor_get_acc(Vector* acc)
+void inertial_sensor_get_acc(uint8_t ins, Vector* acc)
 {
-	*acc = vector_set(inertial_sensor->acc[0], inertial_sensor->acc[1], inertial_sensor->acc[2]);
+	if(inertial_sensor_cnt >= INS_MAX) return;
+	*acc = inertial_sensor[ins]->acc;
 }
 
-void inertial_sensor_get_gyro(Vector* gyro)
+void inertial_sensor_get_gyro(uint8_t ins, Vector* gyro)
 {
-	*gyro = vector_set(inertial_sensor->gyro[0], inertial_sensor->gyro[1], inertial_sensor->gyro[2]);
+	if(inertial_sensor_cnt >= INS_MAX) return;
+	*gyro = inertial_sensor[ins]->gyro;
 }
 
-float inertial_sensor_get_acc_x()
+float inertial_sensor_get_acc_x(uint8_t ins)
 {
-	return inertial_sensor->acc[0];
+	if(inertial_sensor_cnt >= INS_MAX) return 0;
+	return inertial_sensor[ins]->acc.x;
 }
 
-float inertial_sensor_get_acc_y()
+float inertial_sensor_get_acc_y(uint8_t ins)
 {
-	return inertial_sensor->acc[1];
+	if(inertial_sensor_cnt >= INS_MAX) return 0;
+	return inertial_sensor[ins]->acc.y;
 }
 
-float inertial_sensor_get_acc_z()
+float inertial_sensor_get_acc_z(uint8_t ins)
 {
-	return inertial_sensor->acc[2];
+	if(inertial_sensor_cnt >= INS_MAX) return 0;
+	return inertial_sensor[ins]->acc.z;
 }
 
-float inertial_sensor_get_gyro_x()
+float inertial_sensor_get_gyro_x(uint8_t ins)
 {
-	return inertial_sensor->gyro[0];
+	if(inertial_sensor_cnt >= INS_MAX) return 0;
+	return inertial_sensor[ins]->gyro.x;
 }
 
-float inertial_sensor_get_gyro_y()
+float inertial_sensor_get_gyro_y(uint8_t ins)
 {
-	return inertial_sensor->gyro[1];
+	if(inertial_sensor_cnt >= INS_MAX) return 0;
+	return inertial_sensor[ins]->gyro.y;
 }
 
-float inertial_sensor_get_gyro_z()
+float inertial_sensor_get_gyro_z(uint8_t ins)
 {
-	return inertial_sensor->gyro[2];
+	if(inertial_sensor_cnt >= INS_MAX) return 0;
+	return inertial_sensor[ins]->gyro.z;
 }
 
-bool inertial_sensor_ready(void)
+bool inertial_sensor_ready(uint8_t ins)
 {
-	return inertial_sensor->ready;
+	if(inertial_sensor_cnt >= INS_MAX) return false;
+	return inertial_sensor[ins]->ready;
 }
 
-void inertial_sensor_set_ready(void)
+void inertial_sensor_set_ready(uint8_t ins)
 {
-	inertial_sensor->ready = true;
+	if(inertial_sensor_cnt >= INS_MAX) return;
+	inertial_sensor[ins]->ready = true;
 }
 
-bool inertial_sensor_is_update(void)
+bool inertial_sensor_is_update(uint8_t ins)
 {
-	return inertial_sensor->is_update;
+	if(inertial_sensor_cnt >= INS_MAX) return false;
+	return inertial_sensor[ins]->is_update;
 }
 
-void inertial_sensor_clean_update(void)
+void inertial_sensor_clean_update(uint8_t ins)
 {
-	inertial_sensor->is_update = false;
+	if(inertial_sensor_cnt >= INS_MAX) return;
+	inertial_sensor[ins]->is_update = false;
 }
 
 void compass_register(struct compass_s* item)
 {
-    compass = item;
+	if(compass_cnt >= INS_MAX) return;
+    compass[compass_cnt++] = item;	
 }
 
-void compass_update(void)
+void compass_update(uint8_t ins)
 {
-	compass->update();
+	if(compass_cnt >= INS_MAX) return;
+	compass[ins]->update();
 }
 
-void compass_get_mag(Vector* mag)
+void compass_get_mag(uint8_t ins, Vector* mag)
 {
-	*mag = vector_set(compass->mag[0], compass->mag[1], compass->mag[2]);
+	if(compass_cnt >= INS_MAX) return;
+	*mag = compass[ins]->mag;
 }
 
-float compass_get_mag_x()
+float compass_get_mag_x(uint8_t ins)
 {
-	return compass->mag[0];
+	if(compass_cnt >= INS_MAX) return 0;
+	return compass[ins]->mag.x;
 }
 
-float compass_get_mag_y()
+float compass_get_mag_y(uint8_t ins)
 {
-	return compass->mag[1];
+	if(compass_cnt >= INS_MAX) return 0;
+	return compass[ins]->mag.y;
 }
 
-float compass_get_mag_z()
+float compass_get_mag_z(uint8_t ins)
 {
-	return compass->mag[2];
+	if(compass_cnt >= INS_MAX) return 0;
+	return compass[ins]->mag.z;
 }
 
 void baro_register(struct baro_s* item)
 {
-    baro = item;
+	if(baro_cnt >= INS_MAX) return;
+    baro[baro_cnt++] = item;		
 }
 
-void baro_update(void)
+void baro_update(uint8_t ins)
 {
-	baro->update();
+	if(baro_cnt >= INS_MAX) return;
+	baro[ins]->update();
 }
 
-float baro_get_press()
+float baro_get_press(uint8_t ins)
 {
-	return baro->pressure;
+	if(baro_cnt >= INS_MAX) return 0;
+	return baro[ins]->pressure;
 }
 
-float baro_get_altitude()
+float baro_get_altitude(uint8_t ins)
 {
-	return baro->altitude;
+	if(baro_cnt >= INS_MAX) return 0;
+	return baro[ins]->altitude;
 }
 
-float baro_get_temp()
+float baro_get_temp(uint8_t ins)
 {
-	return baro->temperature;
+	if(baro_cnt >= INS_MAX) return 0;
+	return baro[ins]->temperature;
 }
 
 void sensor_init(void)
 {
-	inertial_sensor->init(ROTATION_NONE);   //TODO:
-	compass->init();
-	baro->init();	
+	uint8_t i;
+	for(i=0; i<inertial_sensor_cnt; i++) {
+		inertial_sensor[i]->init(ROTATION_NONE);   //TODO:
+	}
+	for(i=0; i<compass_cnt; i++) {
+		compass[i]->init();
+	}
+	for(i=0; i<baro_cnt; i++) {
+		baro[i]->init();	
+	}
 }

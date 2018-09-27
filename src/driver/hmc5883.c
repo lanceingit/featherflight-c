@@ -57,9 +57,9 @@ void hmc5883_update(void)
     }
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-    this->heir.mag[0] = (int16_t)(buf[0] << 8 | buf[1]) * (1.0f / 660.0f);
-    this->heir.mag[1] = (int16_t)(buf[2] << 8 | buf[3]) * (1.0f / 660.0f);
-    this->heir.mag[2] = (int16_t)(buf[4] << 8 | buf[5]) * (1.0f / 660.0f);
+    this->heir.mag.x = (int16_t)(buf[0] << 8 | buf[1]) * (1.0f / 660.0f);
+    this->heir.mag.y = (int16_t)(buf[2] << 8 | buf[3]) * (1.0f / 660.0f);
+    this->heir.mag.z = (int16_t)(buf[4] << 8 | buf[5]) * (1.0f / 660.0f);
 }
 
 

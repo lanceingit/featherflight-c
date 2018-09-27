@@ -205,9 +205,9 @@ void mpu6050_update(void)
 
     rotate_3f(this->heir.rotation, &x_in_new, &y_in_new, &z_in_new);
 
-    this->heir.acc[0] = lowPassFilter2p_apply(&this->heir.acc_filter_x, x_in_new);
-    this->heir.acc[1] = lowPassFilter2p_apply(&this->heir.acc_filter_y, y_in_new);
-    this->heir.acc[2] = lowPassFilter2p_apply(&this->heir.acc_filter_z, z_in_new);
+    this->heir.acc.x = lowPassFilter2p_apply(&this->heir.acc_filter_x, x_in_new);
+    this->heir.acc.y = lowPassFilter2p_apply(&this->heir.acc_filter_y, y_in_new);
+    this->heir.acc.z = lowPassFilter2p_apply(&this->heir.acc_filter_z, z_in_new);
     
     
     float x_gyro_in_new = (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4);
@@ -224,9 +224,9 @@ void mpu6050_update(void)
     y_gyro_in_new -= this->gyro_offset[1];
     z_gyro_in_new -= this->gyro_offset[2];
 
-	this->heir.gyro[0] = lowPassFilter2p_apply(&this->heir.gyro_filter_x, x_gyro_in_new);
-	this->heir.gyro[1] = lowPassFilter2p_apply(&this->heir.gyro_filter_y, y_gyro_in_new);
-	this->heir.gyro[2] = lowPassFilter2p_apply(&this->heir.gyro_filter_z, z_gyro_in_new);
+	this->heir.gyro.x = lowPassFilter2p_apply(&this->heir.gyro_filter_x, x_gyro_in_new);
+	this->heir.gyro.y = lowPassFilter2p_apply(&this->heir.gyro_filter_y, y_gyro_in_new);
+	this->heir.gyro.z = lowPassFilter2p_apply(&this->heir.gyro_filter_z, z_gyro_in_new);
 
 	this->update = true;
 }

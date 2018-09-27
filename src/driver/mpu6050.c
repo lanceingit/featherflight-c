@@ -194,16 +194,13 @@ bool mpu6050_config(void)
 
 void mpu6050_update(void)
 {
-    uint8_t buf[14];
-
-
-    if (!i2c_read(MPU6050_ADDRESS, MPU_RA_ACCEL_XOUT_H, 14, buf)) {
+    if (!i2c_read(MPU6050_ADDRESS, MPU_RA_ACCEL_XOUT_H, 14, this->buf)) {
         return;
     }
 
-    float x_in_new  = (float)((int16_t)((buf[0] << 8) | buf[1]))*(9.80665f /2048);
-    float y_in_new = (float)((int16_t)((buf[2] << 8) | buf[3]))*(9.80665f /2048);
-    float z_in_new = (float)((int16_t)((buf[4] << 8) | buf[5]))*(9.80665f /2048);
+    float x_in_new  = (float)((int16_t)((this->buf[0] << 8) | this->buf[1]))*(9.80665f /2048);
+    float y_in_new = (float)((int16_t)((this->buf[2] << 8) | this->buf[3]))*(9.80665f /2048);
+    float z_in_new = (float)((int16_t)((this->buf[4] << 8) | this->buf[5]))*(9.80665f /2048);
     
 
     rotate_3f(this->heir.rotation, &x_in_new, &y_in_new, &z_in_new);
@@ -213,9 +210,9 @@ void mpu6050_update(void)
     this->heir.acc[2] = lowPassFilter2p_apply(&this->heir.acc_filter_z, z_in_new);
     
     
-    float x_gyro_in_new = (float)((int16_t)((buf[8] << 8) | buf[9]))*(0.0174532 / 16.4);
-    float y_gyro_in_new = (float)((int16_t)((buf[10] << 8) | buf[11]))*(0.0174532 / 16.4);
-    float z_gyro_in_new = (float)((int16_t)((buf[12] << 8) | buf[13]))*(0.0174532 / 16.4);  
+    float x_gyro_in_new = (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4);
+    float y_gyro_in_new = (float)((int16_t)((this->buf[10] << 8) | this->buf[11]))*(0.0174532 / 16.4);
+    float z_gyro_in_new = (float)((int16_t)((this->buf[12] << 8) | this->buf[13]))*(0.0174532 / 16.4);  
 
     rotate_3f(this->heir.rotation, &x_gyro_in_new, &y_gyro_in_new, &z_gyro_in_new);
 

@@ -89,7 +89,8 @@ bool att_est_q_init(void)
 	Vector j = vector_cross(k, i);;
     
 	// Fill rotation matrix
-	Matrix R={3,3};
+	float R_buf[3*3];			
+	Matrix R={3,3,R_buf};		//FIXME:not use matrix
 	MAT(R, 0, 0) = i.x;
 	MAT(R, 0, 1) = i.y;
 	MAT(R, 0, 2) = i.z;

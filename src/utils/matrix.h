@@ -12,6 +12,8 @@ typedef struct {
 } Matrix;
 
 float matrix_item(Matrix m, uint8_t row, uint8_t column);
+void matrix_separate(Matrix* m);
+void matrix_destroy(Matrix* m);
 float matrix_trace(Matrix m);
 Matrix matrix_mul(Matrix m1, Matrix m2);
 Matrix matrix_scalar(Matrix m, float s);

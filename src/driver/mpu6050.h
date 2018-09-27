@@ -9,6 +9,7 @@ struct mpu6050_s
 	float gyro_raw[3];
 	float gyro_offset[3];
 	bool update;	
+    uint8_t buf[14];    
 };
 
 extern struct mpu6050_s mpu6050;

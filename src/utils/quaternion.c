@@ -197,8 +197,10 @@ Quaternion quaternion_derivative(Quaternion q, Vector v)
     Matrix V = {4, 1, V_data};
 
     mtmp0 = matrix_scalar(matrix_mul(Q, V), 0.5f);
+    matrix_separate(&mtmp0);
 
     tmp0 = quaternion_from_matrix(mtmp0);
+    matrix_destroy(&mtmp0);
 
     return tmp0;
 }

@@ -16,4 +16,5 @@ Vector vector_sub(Vector v1,  Vector v2);
 Vector vector_mul(Vector v, float s);
 float vector_length(Vector v);
 Vector vector_normalized(Vector v);
+Vector vector_normalized_fast(Vector v);
 Vector vector_reverse(Vector v);

@@ -9,4 +9,4 @@ typedef void (update_func)(void);
 typedef bool (read_status_func)(void);
 typedef void (set_status_func)(void);
 
-typedef void (run_func)(void);
+typedef bool (run_func)(float dt);

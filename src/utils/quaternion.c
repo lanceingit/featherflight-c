@@ -1,13 +1,11 @@
 #include "quaternion.h"
 #include "vector.h"
-#include "matrix.h"
 #include <math.h>
 
 
 static Quaternion tmp0;
 
 static Vector vtmp0;
-static Matrix mtmp0;
 
 Quaternion quaternion_set(float w, float x, float y, float z)
 {
@@ -194,22 +192,9 @@ Vector quaternion_conjugate_inversed(Quaternion q, Vector v)
 
 Quaternion quaternion_derivative(Quaternion q, Vector v) 
 {
-    float Q_data[] = {
-        q.w, -q.x, -q.y, -q.z,
-        q.x,  q.w, -q.z,  q.y,
-        q.y,  q.z,  q.w, -q.x,
-        q.z, -q.y,  q.x,  q.w
-    };
-    Matrix Q = {4, 4, Q_data};
+    Quaternion V = {0.0f, v.x, v.y, v.z};
 
-    float V_data[] = {0.0f, v.x, v.y, v.z};
-    Matrix V = {4, 1, V_data};
-
-    mtmp0 = matrix_scalar(matrix_mul(Q, V), 0.5f);
-    matrix_separate(&mtmp0);
-
-    tmp0 = quaternion_from_matrix(mtmp0);
-    matrix_destroy(&mtmp0);
+    tmp0 = quaternion_scaler(quaternion_mul(q, V), 0.5f);
 
     return tmp0;
 }

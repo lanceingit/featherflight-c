@@ -10,9 +10,9 @@ struct est_s
     //method
     init_func* init;
     run_func* run;    
-
 };
 
+#define SPIN_RATE_LIMIT    0.175f
 
 struct att_est_s 
 {
@@ -20,6 +20,13 @@ struct att_est_s
     struct est_s heir;
 
     bool inited;
+    bool use_compass;
+	uint64_t last_time;
+	float dt_max;
+
+    Vector acc;
+    Vector gyro;
+    Vector mag;
 
     float roll;
     float pitch;
@@ -32,6 +39,7 @@ struct att_est_s
     Quaternion	q;
     Vector gyro_bias;
 	Vector corr;
+    float spin_rate;
 };
 
 struct pos_est_s 

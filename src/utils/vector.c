@@ -1,5 +1,6 @@
 #include <math.h>
 #include "vector.h"
+#include "mathlib.h"
 
 static Vector tmp0;
 
@@ -66,6 +67,17 @@ Vector vector_normalized(Vector v)
     tmp0.x = v.x / length;
     tmp0.y = v.y / length;
     tmp0.z = v.z / length;  
+
+    return tmp0;
+} 
+
+Vector vector_normalized_fast(Vector v)
+{
+    float norm = inv_sqrt(vector_length(v));
+
+    tmp0.x = v.x * norm;
+    tmp0.y = v.y * norm;
+    tmp0.z = v.z * norm;  
 
     return tmp0;
 } 

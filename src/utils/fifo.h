@@ -10,44 +10,39 @@
  */
 
 
-#ifndef __FIFO_H_
-#define __FIFO_H_
+#pragma once
 
 #ifdef __cplusplus
  extern "C" {
 #endif 
      
-     
-#include <stdbool.h>
 
-typedef struct
+struct fifo_s
 {
     uint16_t head;
     uint16_t tail;
     uint8_t *data;
     uint16_t size;
     uint16_t cnt;
-}
-Fifo;
+};
 
 
-void Fifo_Create(Fifo *fifo, uint8_t *buf, uint16_t size);
+void fifo_create(struct fifo_s *fifo, uint8_t *buf, uint16_t size);
 
-bool Fifo_Write(Fifo *fifo, uint8_t c);
-void Fifo_WriteForce(Fifo *fifo, uint8_t c);
-bool Fifo_Read(Fifo *fifo, uint8_t* c);
+int8_t fifo_write(struct fifo_s *fifo, uint8_t c);
+void fifo_write_force(struct fifo_s *fifo, uint8_t c);
+int8_t fifo_read(struct fifo_s *fifo, uint8_t* c);
 
-bool Fifo_IsEmpty(Fifo *fifo);
-uint16_t Fifo_GetCount(Fifo *fifo);
+bool fifo_is_empty(struct fifo_s *fifo);
+uint16_t fifo_get_count(struct fifo_s *fifo);
 
-uint8_t* Fifo_GetTail(Fifo *fifo);
-void Fifo_SetTail(Fifo *fifo, uint8_t* newTail);
+uint8_t* fifo_get_tail(struct fifo_s *fifo);
+void fifo_set_tail(struct fifo_s *fifo, uint8_t* new_tail);
 
-uint16_t Fifo_GetTailIndex(Fifo *fifo);
-void Fifo_SetTailIndex(Fifo *fifo, uint16_t newTailIndex);
+uint16_t fifo_get_tail_index(struct fifo_s *fifo);
+void fifo_set_tail_index(struct fifo_s *fifo, uint16_t new_index);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __FIFO_H_ */

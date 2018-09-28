@@ -1,11 +1,11 @@
-#include <stdbool.h>
-#include <stdint.h>
+#include "board.h"
 #include <math.h>
 
 #include "timer.h"
 #include "i2c.h"
 #include "ms5611.h"
 #include "sensor.h"
+#include "mathlib.h"
 
 
 #define MS5611_ADDR                 0x77
@@ -35,7 +35,7 @@
 #define ADDR_CMD_CONVERT_D2_OSR4096		0x58	/* write to this address to start temperature conversion */
 
 
-#define POW2(_x)		((_x) * (_x))
+
 
 #define MS5611_CONVERSION_INTERVAL	25000	/* microseconds */
 #define MS5611_MEASUREMENT_RATIO	3	/* pressure measurements per temperature measurement */
@@ -61,16 +61,17 @@ static uint32_t ms5611_read_adc(void);
 
 bool ms5611_init(void)
 {
+    this->i2c = i2c_open(MS5611_I2C);
 
-    bool ack = false;
+    int8_t ret;
     uint8_t sig;
 
-    i2c_write(MS5611_ADDR, CMD_RESET, 1);
-    Timer_delayUs(100*1000);
+    i2c_write(this->i2c, MS5611_ADDR, CMD_RESET, 1);
+    delay_ms(100);
 
     
-    ack = i2c_read(MS5611_ADDR, CMD_PROM_RD, 1, &sig);
-    if (!ack)
+    ret = i2c_read(this->i2c, MS5611_ADDR, CMD_PROM_RD, 1, &sig);
+    if (ret < 0)
         return false;
 
     if(ms5611_read_prom() == false)
@@ -164,11 +165,11 @@ void ms5611_update()
     
     if(this->measure_phase == 0)
     {
-        i2c_write(MS5611_ADDR, ADDR_CMD_CONVERT_D2_OSR1024, 1);
+        i2c_write(this->i2c, MS5611_ADDR, ADDR_CMD_CONVERT_D2_OSR1024, 1);
     }
     else
     {
-        i2c_write(MS5611_ADDR, ADDR_CMD_CONVERT_D1_OSR1024, 1);
+        i2c_write(this->i2c, MS5611_ADDR, ADDR_CMD_CONVERT_D1_OSR1024, 1);
     }
         
     this->collect_phase = true;
@@ -178,7 +179,7 @@ void ms5611_update()
 static uint32_t ms5611_read_adc(void)
 {
     uint8_t rxbuf[3];
-    i2c_read(MS5611_ADDR, CMD_ADC_READ, 3, rxbuf); // read ADC
+    i2c_read(this->i2c, MS5611_ADDR, CMD_ADC_READ, 3, rxbuf); // read ADC
     return (rxbuf[0] << 16) | (rxbuf[1] << 8) | rxbuf[2];
 }
 
@@ -188,7 +189,7 @@ static bool ms5611_read_prom(void)
 
     for (uint8_t i = 0; i < PROM_NB; i++)
     {
-        i2c_read(MS5611_ADDR, CMD_PROM_RD + i * 2, 2, rxbuf); // send PROM READ command
+        i2c_read(this->i2c, MS5611_ADDR, CMD_PROM_RD + i * 2, 2, rxbuf); // send PROM READ command
         this->prom_buf.c[i] = rxbuf[0] << 8 | rxbuf[1];
     
     }

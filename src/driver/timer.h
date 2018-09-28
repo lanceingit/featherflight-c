@@ -8,16 +8,21 @@
 
 #pragma once
 
-#include <stdint.h>
+typedef uint64_t time_t;
 
-void Timer_init(void);
-void Timer_disable(void);
+void timer_init(void);
+void timer_disable(void);
 
-uint64_t Timer_create(uint64_t us);
-bool Timer_isTimeout(uint64_t t);
-void Timer_delayUs(uint64_t us);
-uint64_t Timer_getTime(void);
-uint64_t Timer_elapsedTime(uint64_t* t);
+time_t timer_create(uint32_t us);
+bool timer_is_timeout(time_t t);
+
+time_t timer_now(void);
+time_t timer_elapsed(time_t* t);
+
+void delay(float s);
+void delay_ms(uint32_t ms);
+void delay_us(uint32_t us);
+void sleep(float s);
 
 
 

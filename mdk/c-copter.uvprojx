@@ -332,7 +332,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F303xC,USE_STDPERIPH_DRIVER,ARM_MATH_CM4,__FPU_PRESENT=1,__USE_C99_MATH</Define>
               <Undefine></Undefine>
-              <IncludePath>..\src\bsp;..\src\bsp\CMSIS\CM4\CoreSupport;..\src\bsp\CMSIS\CM4\DeviceSupport\ST\STM32F30x;..\src\bsp\STM32F30x_StdPeriph_Driver\inc;..\src\kernel;..\src\kernel\FreeRTOS\include;..\src\kernel\FreeRTOS\portable\RVDS\ARM_CM4F;..\src\driver;..\src\link\mavlink;..\src\link\mavlink\common;..\src\link;..\src;..\src\StateSpace;..\src\math;..\src\StateSpace\EKF;..\src\utils;..\src\utils\mathlib;..\src\utils\mathlib\math;..\src\utils\geo;..\src\utils\geo_lookup</IncludePath>
+              <IncludePath>..\src\bsp;..\src\bsp\CMSIS\CM4\CoreSupport;..\src\bsp\CMSIS\CM4\DeviceSupport\ST\STM32F30x;..\src\bsp\STM32F30x_StdPeriph_Driver\inc;..\src\driver;..\src\link\mavlink;..\src\link\mavlink\common;..\src\link;..\src;..\src\mathlib;..\src\utils;..\src\utils\geo;..\src\utils\geo_lookup;..\src\config;..\src\modules;..\src\pilot</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -453,12 +453,22 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>launch</GroupName>
+          <GroupName>config</GroupName>
           <Files>
             <File>
-              <FileName>main.c</FileName>
+              <FileName>board.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\src\config\board.h</FilePath>
+            </File>
+            <File>
+              <FileName>chip.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\src\config\chip.h</FilePath>
+            </File>
+            <File>
+              <FileName>version.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\main.c</FilePath>
+              <FilePath>..\src\config\version.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1253,27 +1263,47 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>StateSpace</GroupName>
+          <GroupName>pilot</GroupName>
           <Files>
+            <File>
+              <FileName>att_est_cf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\pilot\att_est_cf.c</FilePath>
+            </File>
             <File>
               <FileName>att_est_q.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\StateSpace\att_est_q.c</FilePath>
-            </File>
-            <File>
-              <FileName>sensor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\StateSpace\sensor.c</FilePath>
+              <FilePath>..\src\pilot\att_est_q.c</FilePath>
             </File>
             <File>
               <FileName>est.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\StateSpace\est.c</FilePath>
+              <FilePath>..\src\pilot\est.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>modules</GroupName>
+          <Files>
+            <File>
+              <FileName>log.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\modules\log.c</FilePath>
             </File>
             <File>
-              <FileName>att_est_cf.c</FileName>
+              <FileName>mtd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\StateSpace\att_est_cf.c</FilePath>
+              <FilePath>..\src\modules\mtd.c</FilePath>
+            </File>
+            <File>
+              <FileName>log_messages.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\src\modules\log_messages.h</FilePath>
+            </File>
+            <File>
+              <FileName>sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\modules\sensor.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1286,64 +1316,59 @@
               <FilePath>..\src\utils\fifo.c</FilePath>
             </File>
             <File>
-              <FileName>geo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\utils\geo\geo.c</FilePath>
-            </File>
-            <File>
-              <FileName>log_messages.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\src\utils\log_messages.h</FilePath>
-            </File>
-            <File>
-              <FileName>log.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\utils\log.c</FilePath>
-            </File>
-            <File>
-              <FileName>LowPassFilter2p.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\utils\LowPassFilter2p.c</FilePath>
-            </File>
-            <File>
-              <FileName>mtd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\utils\mtd.c</FilePath>
-            </File>
-            <File>
               <FileName>rotation.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\utils\rotation.c</FilePath>
             </File>
             <File>
-              <FileName>mathlib.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\src\utils\mathlib.h</FilePath>
+              <FileName>perf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\utils\perf.c</FilePath>
             </File>
+            <File>
+              <FileName>lpf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\utils\lpf.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>mathlib</GroupName>
+          <Files>
             <File>
               <FileName>mathlib.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\utils\mathlib.c</FilePath>
+              <FilePath>..\src\mathlib\mathlib.c</FilePath>
             </File>
             <File>
               <FileName>matrix.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\utils\matrix.c</FilePath>
-            </File>
-            <File>
-              <FileName>pref.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\utils\pref.c</FilePath>
+              <FilePath>..\src\mathlib\matrix.c</FilePath>
             </File>
             <File>
               <FileName>quaternion.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\utils\quaternion.c</FilePath>
+              <FilePath>..\src\mathlib\quaternion.c</FilePath>
             </File>
             <File>
               <FileName>vector.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\utils\vector.c</FilePath>
+              <FilePath>..\src\mathlib\vector.c</FilePath>
+            </File>
+            <File>
+              <FileName>srcdkf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\mathlib\srcdkf.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>launch</GroupName>
+          <Files>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\main.c</FilePath>
             </File>
           </Files>
         </Group>

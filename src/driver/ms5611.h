@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sensor.h"
+#include "i2c.h"
 
 struct prom_s {
 	uint16_t factory_setup;
@@ -27,6 +28,7 @@ struct ms5611_s
     int32_t TEMP;
     int64_t OFF;
     int64_t SENS;    
+	struct i2c_s* i2c;
 }; 
 
 extern struct ms5611_s ms5611;

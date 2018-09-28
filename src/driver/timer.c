@@ -5,17 +5,15 @@
  * simple timer, delay and time block function 
  */
 
-#include <stdbool.h>
-
-#include "stm32f30x.h"
+#include "board.h"
 
 #include "timer.h"
 
 
-static volatile uint64_t _timerCnt = 0;
+static volatile time_t timer_cnt = 0;
 
 
-void Timer_init()
+void timer_init()
 {
     TIM_TimeBaseInitTypeDef    TIM_TimeBaseStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
@@ -44,27 +42,27 @@ void Timer_init()
 }
 
 
-void Timer_disable(void)
+void timer_disable(void)
 {
     NVIC_DisableIRQ(TIM7_IRQn);    
 }
 
 
-static void Timer_irs(void)
+static void timer_irs(void)
 {    
     TIM_ClearFlag(TIM7, TIM_IT_Update);
-    _timerCnt++;
+    timer_cnt++;
 }
 
-uint64_t Timer_create(uint64_t us)
+time_t timer_create(uint32_t us)
 {
-    return (_timerCnt + (us/10) - 1);
+    return (timer_cnt + (us/10) - 1);
 }
 
 
-bool Timer_isTimeout(uint64_t t)
+bool timer_is_timeout(time_t t)
 {
-    if(t >= _timerCnt)
+    if(t >= timer_cnt)
     {
         return false;
     }
@@ -74,29 +72,51 @@ bool Timer_isTimeout(uint64_t t)
     }
 }
 
-
-void Timer_delayUs(uint64_t us)
+time_t timer_now()
 {
-    volatile uint64_t wait;
-
-    wait = Timer_create(us);
-    while (!Timer_isTimeout(wait));
+	return timer_cnt*10;
 }
 
-uint64_t Timer_getTime()
+time_t timer_elapsed(time_t* t)
 {
-	return _timerCnt*10;
+	return timer_cnt*10 - *t;
 }
 
-uint64_t Timer_elapsedTime(uint64_t* t)
+void delay(float s)
 {
-	return _timerCnt*10 - *t;
+    volatile time_t wait;
+
+    wait = timer_create((uint32_t)(s*1000*1000));
+    while (!timer_is_timeout(wait));
 }
 
+void delay_ms(uint32_t ms)
+{
+    volatile time_t wait;
+
+    wait = timer_create(ms*1000);
+    while (!timer_is_timeout(wait));
+}
+
+void delay_us(uint32_t us)
+{
+    volatile time_t wait;
+
+    wait = timer_create(us);
+    while (!timer_is_timeout(wait));
+}
     
+void sleep(float s)
+{
+    volatile time_t wait;
+
+    wait = timer_create((uint32_t)(s*1000*1000));
+    while (!timer_is_timeout(wait));
+}
+
 void TIM7_IRQHandler(void)
 {
-    Timer_irs();
+    timer_irs();
 }
 
 

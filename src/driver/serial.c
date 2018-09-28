@@ -1,38 +1,12 @@
-/*
-    This file is part of AutoQuad.
+#include "board.h"
 
-    AutoQuad is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    AutoQuad is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    You should have received a copy of the GNU General Public License
-    along with AutoQuad.  If not, see <http://www.gnu.org/licenses/>.
-
-    Copyright © 2011-2014  Bill Nesbitt
-*/
-
-#include <string.h>
-#include "stm32f30x.h"
 #include "serial.h"
 
 
-static serialPort_t serialPort1;
+static struct serial_s serial1 = {.inited=false};
 
 
-static void serialUart1Init(void);
-
-
-static void serialIRQHandler(serialPort_t *s);
-
-
-
-
-static void serialUart1Init(void) 
+static void serial_port1_init(void) 
 {
     GPIO_InitTypeDef GPIO_InitStructure;
     NVIC_InitTypeDef NVIC_InitStruct;
@@ -59,35 +33,35 @@ static void serialUart1Init(void)
     NVIC_Init(&NVIC_InitStruct);
 }
 
-
-
-
-serialPort_t * serialOpen(USART_TypeDef *USARTx, uint32_t baud, uint8_t* rxBuf, uint16_t rxBufSize, uint8_t* txBuf, uint16_t txBufSize) 
+struct serial_s* serial_open(USART_TypeDef *USARTx, uint32_t baud, uint8_t* rxbuf, uint16_t rxbuf_size, uint8_t* txbuf, uint16_t txbuf_size)
 {
-    serialPort_t *s = NULL;
+    struct serial_s* s = NULL;
     USART_InitTypeDef USART_InitStructure;
     
     if (USARTx == USART1) {
-		serialUart1Init();
-        s = &serialPort1;
-    } 
+        s = &serial1;
+        if(s->inited) return s;
+		serial_port1_init();
+    } else {
+        return NULL;
+    }
     
     s->USARTx = USARTx;
-    s->baudRate = baud;
-    s->rxBufSize = rxBufSize;
-    s->rxBuf = rxBuf;
-    s->txBufSize = txBufSize;
-    s->txBuf = txBuf;
+    s->baud = baud;
+    s->rxbuf_size = rxbuf_size;
+    s->rxbuf = rxbuf;
+    s->txbuf_size = txbuf_size;
+    s->txbuf = txbuf;
     
-    Fifo_Create(&s->rxFifo, rxBuf, rxBufSize);
-    Fifo_Create(&s->txFifo, txBuf, txBufSize);
+    fifo_create(&s->rx_fifo, rxbuf, rxbuf_size);
+    fifo_create(&s->tx_fifo, txbuf, txbuf_size);
 
 
     // reduce oversampling to allow for higher baud rates
     USART_OverSampling8Cmd(s->USARTx, ENABLE);
 	
     USART_StructInit(&USART_InitStructure);
-    USART_InitStructure.USART_BaudRate = s->baudRate;
+    USART_InitStructure.USART_BaudRate = s->baud;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
     USART_InitStructure.USART_StopBits = USART_StopBits_1;
     USART_InitStructure.USART_Parity = USART_Parity_No;
@@ -100,68 +74,62 @@ serialPort_t * serialOpen(USART_TypeDef *USARTx, uint32_t baud, uint8_t* rxBuf, 
     USART_ITConfig(USARTx, USART_IT_RXNE, ENABLE);
 	USART_ITConfig(USARTx, USART_IT_TXE, ENABLE);
     
+    s->inited = true;
+
     return s;
 }
 
-void serialWrite(serialPort_t *s, unsigned char ch) 
+void serial_write_ch(struct serial_s* s, unsigned char ch) 
 {
-    Fifo_WriteForce(&s->txFifo, ch);
+    fifo_write_force(&s->tx_fifo, ch);
 
     USART_ITConfig(s->USARTx, USART_IT_TXE, ENABLE);
 }
 
-void serialWriteMass(serialPort_t *s, unsigned char* buf, uint16_t len) 
+void serial_write(struct serial_s* s, unsigned char* buf, uint16_t len) 
 {
-    uint16_t i;
-    for(i=0; i<len; i++)
+    for(uint16_t i=0; i<len; i++)
     {
-        Fifo_WriteForce(&s->txFifo, buf[i]);
+        fifo_write_force(&s->tx_fifo, buf[i]);
     }
 
     USART_ITConfig(s->USARTx, USART_IT_TXE, ENABLE);
 }
 
-bool serialAvailable(serialPort_t *s) 
+bool serial_available(struct serial_s* s) 
 {
-	return !Fifo_IsEmpty(&s->rxFifo);
+	return !fifo_is_empty(&s->rx_fifo);
 }
 
-uint8_t serialRead(serialPort_t *s) {
-    uint8_t ch;
-    
-    Fifo_Read(&s->rxFifo, &ch);
-    
-    return ch;
+int8_t serial_read(struct serial_s* s, uint8_t* ch) 
+{
+    return fifo_read(&s->rx_fifo, ch);
 }
 
 
 //
 // Interrupt handlers
 //
-static void serialIRQHandler(serialPort_t *s) 
+static void serial_IRQHandler(struct serial_s* s) 
 {
     uint16_t SR = s->USARTx->ISR;
 	
     if (SR & USART_FLAG_RXNE) {
-        Fifo_WriteForce(&s->rxFifo, s->USARTx->RDR);
+        fifo_write_force(&s->rx_fifo, s->USARTx->RDR);
     }
 
     if (SR & USART_FLAG_TXE) {
-        if (!Fifo_IsEmpty(&s->txFifo)) {
-            uint8_t ch;
-            Fifo_Read(&s->txFifo, &ch);
-            s->USARTx->TDR = ch;      
-	    }
-        // EOT
-        else {
+        uint8_t ch;
+        if(fifo_read(&s->tx_fifo, &ch) == 0) {
+            s->USARTx->TDR = ch;
+        } else {   // EOT
             USART_ITConfig(s->USARTx, USART_IT_TXE, DISABLE);
         }
     }
 }
 
-
 void USART1_IRQHandler(void) 
 {
-    serialIRQHandler(&serialPort1);
+    serial_IRQHandler(&serial1);
 }
 

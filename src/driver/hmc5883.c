@@ -1,5 +1,4 @@
-#include <stdbool.h>
-#include <stdint.h>
+#include "board.h"
 
 #include "i2c.h"
 #include "hmc5883.h"
@@ -32,16 +31,18 @@ static struct hmc5883_s* this=&hmc5883;
 
 bool hmc5883_init(void)
 {
-    bool ack = false;
+    int8_t ret;
     uint8_t sig = 0;
-    
-    ack = i2c_read(MAG_ADDRESS, 0x0A, 1, &sig);
-    if (!ack || sig != 'H')
+
+    this->i2c = i2c_open(HMC5883_I2C);
+
+    ret = i2c_read(this->i2c, MAG_ADDRESS, 0x0A, 1, &sig);
+    if (ret<0 || sig != 'H')
         return false;
     
     
-    i2c_write(MAG_ADDRESS, HMC58X3_R_CONFB, (3 << 5));
-    i2c_write(MAG_ADDRESS, HMC58X3_R_MODE, 0x00);
+    i2c_write(this->i2c, MAG_ADDRESS, HMC58X3_R_CONFB, (3 << 5));
+    i2c_write(this->i2c, MAG_ADDRESS, HMC58X3_R_MODE, 0x00);
     
     return true;
    
@@ -51,8 +52,8 @@ void hmc5883_update(void)
 {
     uint8_t buf[6];
 
-    bool ack = i2c_read(MAG_ADDRESS, MAG_DATA_REGISTER, 6, buf);
-    if (!ack) {
+    int8_t ret = i2c_read(this->i2c, MAG_ADDRESS, MAG_DATA_REGISTER, 6, buf);
+    if (ret < 0) {
         return ;
     }
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.

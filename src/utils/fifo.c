@@ -8,15 +8,14 @@
  *
  * say something about file
  */
-#include <stdbool.h>
-#include <stdint.h>
+#include "board.h"
 
 #include "fifo.h"
 
 
 
 
-void Fifo_Create(Fifo *fifo, uint8_t *buf, uint16_t size)
+void fifo_create(struct fifo_s *fifo, uint8_t *buf, uint16_t size)
 {
     fifo->head = 0;
     fifo->tail = 0;
@@ -25,11 +24,11 @@ void Fifo_Create(Fifo *fifo, uint8_t *buf, uint16_t size)
 }
 
 
-bool Fifo_Write(Fifo *fifo, uint8_t c)
+int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
 {
     if(fifo->head + 1 == fifo->tail)
     {
-        return false;
+        return -1;
     }
    
     fifo->data[fifo->head] = c;
@@ -40,11 +39,11 @@ bool Fifo_Write(Fifo *fifo, uint8_t c)
         fifo->head = 0;
     }
     
-    return true;
+    return 0;
 }
 
 
-void Fifo_WriteForce(Fifo *fifo, uint8_t c)
+void fifo_write_force(struct fifo_s *fifo, uint8_t c)
 {  
     if(fifo->head + 1 == fifo->tail)
     {
@@ -64,11 +63,11 @@ void Fifo_WriteForce(Fifo *fifo, uint8_t c)
 }
 
 
-bool Fifo_Read(Fifo *fifo, uint8_t* c)
+int8_t fifo_read(struct fifo_s *fifo, uint8_t* c)
 {
     if(fifo->head == fifo->tail)
     {
-        return false;
+        return -1;
     }
 
     *c = fifo->data[fifo->tail];
@@ -79,33 +78,33 @@ bool Fifo_Read(Fifo *fifo, uint8_t* c)
         fifo->tail = 0;
     }
 
-    return true;
+    return 0;
 }
 
 
-bool Fifo_IsEmpty(Fifo *fifo)
+bool fifo_is_empty(struct fifo_s *fifo)
 {
     return (fifo->head == fifo->tail);
 }
 
-uint16_t Fifo_GetCount(Fifo *fifo)
+uint16_t fifo_get_count(struct fifo_s *fifo)
 {
 	return fifo->cnt;
 }
 
-uint16_t Fifo_GetTailIndex(Fifo *fifo)
+uint16_t fifo_get_tail_index(struct fifo_s *fifo)
 {
     return fifo->tail;
 }
 
 
-void Fifo_SetTailIndex(Fifo *fifo, uint16_t newTailIndex)
+void fifo_set_tail_index(struct fifo_s *fifo, uint16_t new_index)
 {
-    fifo->tail = newTailIndex;
+    fifo->tail = new_index;
 }
 
 
-uint8_t* Fifo_GetTail(Fifo *fifo)
+uint8_t* fifo_get_tail(struct fifo_s *fifo)
 {
     return fifo->data+fifo->tail;
 }
@@ -116,36 +115,36 @@ uint8_t* Fifo_GetTail(Fifo *fifo)
 #define IS_BEYOND_HEAD(x)   (((x)>fifo->head && (x)<fifo->tail && IS_TAIL_FRONT_HEAD) \
                           || ((x)>fifo->head && (x)>fifo->tail && IS_TAIL_BEHAND_HEAD))
 
-void Fifo_SetTail(Fifo *fifo, uint8_t* newTail)
+void fifo_set_tail(struct fifo_s *fifo, uint8_t* new_tail)
 {
-    uint16_t newIndex;
+    uint16_t new_index;
 
-    newIndex = newTail - fifo->data;
-    if(newIndex > fifo->size)
+    new_index = new_tail - fifo->data;
+    if(new_index > fifo->size)
     {
-        newIndex -= (fifo->size-1);
+        new_index -= (fifo->size-1);
     }
 
     if(IS_TAIL_BEHAND_HEAD)
     {
-        if(newIndex > fifo->head)
+        if(new_index > fifo->head)
         {
             fifo->tail = fifo->head;
         }
         else
         {
-            fifo->tail = newIndex;
+            fifo->tail = new_index;
         }
     }
     else if(IS_TAIL_FRONT_HEAD)
     {
-        if(IS_BEYOND_HEAD(newIndex))
+        if(IS_BEYOND_HEAD(new_index))
         {
             fifo->tail = fifo->head;
         }
         else
         {
-            fifo->tail = newIndex;
+            fifo->tail = new_index;
         }
     }
     else //end to end

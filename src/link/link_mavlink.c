@@ -1,4 +1,4 @@
-#include "stm32f30x.h"
+#include "board.h"
 
 #include "serial.h"
 #include "mavlink.h"
@@ -9,7 +9,7 @@
 #define TX_BUF_SIZE 300    
 
 uint8_t sendbuf[300];
-serialPort_t * _port;
+struct serial_s * _port;
 uint8_t _rxBuf[RX_BUF_SIZE]; 
 uint8_t _txBuf[TX_BUF_SIZE];
 
@@ -20,7 +20,7 @@ void handle_log_request_list(mavlink_message_t *msg);
 
 void link_mavlink_init()
 {   
-    _port = serialOpen(USART1, 921600, _rxBuf, RX_BUF_SIZE, _txBuf, TX_BUF_SIZE);
+    _port = serial_open(USART1, 921600, _rxBuf, RX_BUF_SIZE, _txBuf, TX_BUF_SIZE);
 }    
 
 
@@ -61,17 +61,14 @@ void link_mavlink_msg_send(mavlink_message_t* msg)
     uint16_t len;
        
     len = mavlink_msg_to_send_buffer(sendbuf, msg);
-    serialWriteMass(_port, sendbuf, len);    
+    serial_write(_port, sendbuf, len);    
 }
 
 bool link_mavlink_recv(mavlink_message_t* msg)
 {
     uint8_t c;
 
-    if(serialAvailable(_port))
-    {
-        c = serialRead(_port);
-
+    if(serial_read(_port, &c) == 0) {
         if(mavlink_parse_char(0, c, msg, &_r_mavlink_status))
         {
             return true;

@@ -1,28 +1,32 @@
 #pragma once
 
 
+#include "board.h"
 #include "fifo.h"
 
 
-typedef struct {
-    uint32_t baudRate;
+struct serial_s
+{
+    bool inited;
+    
+    uint32_t baud;
 
-    uint16_t txBufSize;
-    uint8_t *txBuf;
-    Fifo txFifo;
+    uint16_t txbuf_size;
+    uint8_t *txbuf;
+    struct fifo_s tx_fifo;
 
-    uint16_t rxBufSize;
-    uint8_t *rxBuf;
-    Fifo rxFifo;
+    uint16_t rxbuf_size;
+    uint8_t *rxbuf;
+    struct fifo_s rx_fifo;
 
     USART_TypeDef *USARTx;
-} serialPort_t;
+} ;
 
-serialPort_t * serialOpen(USART_TypeDef *USARTx, uint32_t baud, uint8_t* rxBuf, uint16_t rxBufSize, uint8_t* txBuf, uint16_t txBufSize);
-void serialWrite(serialPort_t *s, unsigned char ch);
-void serialWriteMass(serialPort_t *s, unsigned char* buf, uint16_t len);
-bool serialAvailable(serialPort_t *s);
-uint8_t serialRead(serialPort_t *s);
+struct serial_s* serial_open(USART_TypeDef *USARTx, uint32_t baud, uint8_t* rxbuf, uint16_t rxbuf_size, uint8_t* txbuf, uint16_t txbuf_size);
+void serial_write_ch(struct serial_s* s, uint8_t ch);
+void serial_write(struct serial_s* s, uint8_t* buf, uint16_t len);
+bool serial_available(struct serial_s* s);
+int8_t serial_read(struct serial_s* s, uint8_t* ch);
 
 
 

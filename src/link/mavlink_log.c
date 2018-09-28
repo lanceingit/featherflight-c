@@ -1,4 +1,4 @@
-#include <stdbool.h>
+#include "board.h"
 
 #include "link_mavlink.h"
 #include "mavlink_log.h"

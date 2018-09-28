@@ -1,15 +1,11 @@
-#include <stdbool.h>
-#include <stdint.h>
 #include <string.h>
 
-#include "stm32f30x.h"
+#include "board.h"
 
 #include "spi.h"
 #include "spi_flash.h"
 
 #include "timer.h"
-
-#define M25P16_SPI_INSTANCE     SPI2
 
 #define M25P16_ERASE_SIZE_MIN 	4096
 
@@ -47,15 +43,17 @@
 #define DISABLE_M25P16 GPIO_SetBits(GPIOB, GPIO_Pin_12);
 #define ENABLE_M25P16  GPIO_ResetBits(GPIOB, GPIO_Pin_12);
 
-static flashGeometry_t geometry;
+static struct flashGeometry_s geometry;
 static bool couldBeBusy=false;
 
-static bool spi_flash_performOneByteCommand(uint8_t command);
-static bool spi_flash_writeEnable(void);
+static int8_t spi_flash_performOneByteCommand(uint8_t command);
+static int8_t spi_flash_writeEnable(void);
 static uint8_t spi_flash_readStatus(void);
-static bool spi_flash_readIdentification(void);
+static int8_t spi_flash_readIdentification(void);
 
+struct spi_flash_s spi_flash;
 
+struct spi_flash_s* this=&spi_flash;
 
 /**
  * Initialize the driver, must be called before any other routines.
@@ -77,7 +75,7 @@ bool spi_flash_init()
         return true;
     }
     
-    spi_init();
+    this->spi = spi_open(SPI_FLAHS_SPI);
     
     GPIO_InitTypeDef GPIO_InitStructure;
     
@@ -92,20 +90,24 @@ bool spi_flash_init()
     DISABLE_M25P16;
 
     //Maximum speed for standard READ command is 20mHz, other commands tolerate 25mHz
-    spi_setDivisor(2);
+    spi_set_divisor(this->spi, 2);
 
-    return spi_flash_readIdentification();
+    if(spi_flash_readIdentification() == 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /**
  * Send the given command byte to the device.
  */
-bool spi_flash_performOneByteCommand(uint8_t command)
+int8_t spi_flash_performOneByteCommand(uint8_t command)
 {
-	bool ret;
+	int8_t ret;
     ENABLE_M25P16;
 
-    ret = spi_transferByte(NULL, command);
+    ret = spi_transfer_byte(this->spi, NULL, command);
 
     DISABLE_M25P16;
 
@@ -116,17 +118,17 @@ bool spi_flash_performOneByteCommand(uint8_t command)
  * The flash requires this write enable command to be sent before commands that would cause
  * a write like program and erase.
  */
-bool spi_flash_writeEnable()
+int8_t spi_flash_writeEnable()
 {
-    if(spi_flash_performOneByteCommand(M25P16_INSTRUCTION_WRITE_ENABLE))
+    if(spi_flash_performOneByteCommand(M25P16_INSTRUCTION_WRITE_ENABLE) == 0)
     {
         // Assume that we're about to do some writing, so the device is just about to become busy
         couldBeBusy = true;
-        return true;
+        return 0;
     }
     else
     {
-    	return false;
+    	return -1;
     }
 }
 
@@ -137,7 +139,7 @@ uint8_t spi_flash_readStatus()
 
     ENABLE_M25P16;
 
-    spi_transfer(in, command, sizeof(command));
+    spi_transfer(this->spi, in, command, sizeof(command));
 
     DISABLE_M25P16;
 
@@ -154,9 +156,9 @@ bool spi_flash_isReady()
 
 bool spi_flash_waitForReady(uint32_t timeoutMillis)
 {
-    uint32_t time = Timer_getTime();
+    time_t time = timer_now();
     while (!spi_flash_isReady()) {
-        if (Timer_getTime() - time > timeoutMillis*1000) {
+        if (timer_now() - time > timeoutMillis*1000) {
             return false;
         }
     }
@@ -169,13 +171,13 @@ bool spi_flash_waitForReady(uint32_t timeoutMillis)
  *
  * Returns true if we get valid ident, false if something bad happened like there is no M25P16.
  */
-bool spi_flash_readIdentification()
+int8_t spi_flash_readIdentification()
 {
     uint8_t out[] = { M25P16_INSTRUCTION_RDID, 0, 0, 0 };
     uint8_t in[4];
     uint32_t chipID;
 
-    Timer_delayUs(50*1000); // short delay required after initialisation of SPI device instance.
+    delay_ms(50); // short delay required after initialisation of SPI device instance.
 
     /* Just in case transfer fails and writes nothing, so we don't try to verify the ID against random garbage
      * from the stack:
@@ -184,7 +186,7 @@ bool spi_flash_readIdentification()
 
     ENABLE_M25P16;
 
-    spi_transfer(in, out, sizeof(out));
+    spi_transfer(this->spi, in, out, sizeof(out));
 
     // Clearing the CS bit terminates the command early so we don't have to read the chip UID:
     DISABLE_M25P16;
@@ -221,7 +223,7 @@ bool spi_flash_readIdentification()
 
             geometry.sectorSize = 0;
             geometry.totalSize = 0;
-            return false;
+            return -1;
     }
 
     geometry.sectorSize = geometry.pagesPerSector * geometry.pageSize;
@@ -229,7 +231,7 @@ bool spi_flash_readIdentification()
 
     couldBeBusy = true; // Just for luck we'll assume the chip could be busy even though it isn't specced to be
 
-    return true;
+    return 0;
 }
 
 
@@ -246,11 +248,11 @@ bool spi_flash_eraseSector(uint32_t address)
     if(!spi_flash_isReady()) return false;
 
 
-    if(!spi_flash_writeEnable()) return false;
+    if(spi_flash_writeEnable()<0) return false;
 
     ENABLE_M25P16;
 
-    ret = spi_transfer(NULL, out, sizeof(out));
+    ret = spi_transfer(this->spi, NULL, out, sizeof(out));
 
     DISABLE_M25P16;
 
@@ -262,9 +264,9 @@ bool spi_flash_eraseCompletely()
     //waitForReady(BULK_ERASE_TIMEOUT_MILLIS);
 	if(!spi_flash_isReady()) return false;
 
-	if(!spi_flash_writeEnable()) return false;
+	if(spi_flash_writeEnable()<0) return false;
 
-    if(spi_flash_performOneByteCommand(M25P16_INSTRUCTION_BULK_ERASE)) return true;
+    if(spi_flash_performOneByteCommand(M25P16_INSTRUCTION_BULK_ERASE)==0) return true;
     else return false;
 }
 
@@ -275,17 +277,17 @@ bool spi_flash_pageProgramBegin(uint32_t address)
     //waitForReady(DEFAULT_TIMEOUT_MILLIS);
     if(!spi_flash_isReady()) return false;
 
-    if(!spi_flash_writeEnable()) return false;
+    if(spi_flash_writeEnable()<0) return false;
 
     ENABLE_M25P16;
 
-    if(spi_transfer(NULL, command, sizeof(command))) return true;
+    if(spi_transfer(this->spi, NULL, command, sizeof(command))) return true;
     else return false;
 }
 
 bool spi_flash_pageProgramContinue(const uint8_t *data, int length)
 {
-    return spi_transfer(NULL, data, length);
+    return spi_transfer(this->spi, NULL, data, length);
 }
 
 void spi_flash_pageProgramFinish()
@@ -344,9 +346,9 @@ int spi_flash_readBytes(uint32_t address, uint8_t *buffer, int length)
 
     ENABLE_M25P16;
 
-    if(spi_transfer(NULL, command, sizeof(command)))
+    if(spi_transfer(this->spi, NULL, command, sizeof(command)))
     {
-        if(!spi_transfer(buffer, NULL, length)) length = 0;
+        if(!spi_transfer(this->spi, buffer, NULL, length)) length = 0;
     }
     else
     {
@@ -363,7 +365,7 @@ int spi_flash_readBytes(uint32_t address, uint8_t *buffer, int length)
  *
  * Can be called before calling m25p16_init() (the result would have totalSize = 0).
  */
-const flashGeometry_t* spi_flash_getGeometry()
+struct flashGeometry_s* spi_flash_getGeometry()
 {
     return &geometry;
 }

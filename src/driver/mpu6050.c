@@ -1,12 +1,9 @@
-#include <stdbool.h>
-#include <stdint.h>
-
-#include "stm32f30x.h"
+#include "board.h"
 
 #include "i2c.h"
 #include "timer.h"
 #include "mpu6050.h"
-#include "LowPassFilter2p.h"
+#include "lpf.h"
 #include "sensor.h"
 
 #define MPU6050_ADDRESS         0x68
@@ -135,12 +132,12 @@ static bool mpu6050_config(void);
 
 bool mpu6050_init(enum Rotation r)
 {
-	lowPassFilter2p_init(&this->heir.acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	lowPassFilter2p_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+	lpf_init(&this->heir.acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lpf_init(&this->heir.acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lpf_init(&this->heir.acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+	lpf_init(&this->heir.gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+	lpf_init(&this->heir.gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+	lpf_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
 	this->heir.ready = false;
 	this->heir.rotation = r;
 	this->heir.is_update = false;
@@ -151,39 +148,39 @@ bool mpu6050_init(enum Rotation r)
 
 bool mpu6050_config(void)
 {
-    bool ack;
+    int8_t ret;
     uint8_t sig;
     
-    i2c_init();
+    this->i2c = i2c_open(MPU6050_I2C);
 
-    ack = i2c_read(MPU6050_ADDRESS, MPU_RA_WHO_AM_I, 1, &sig);
-    if (!ack)
+    ret = i2c_read(this->i2c, MPU6050_ADDRESS, MPU_RA_WHO_AM_I, 1, &sig);
+    if(ret < 0) 
         return false;
-
+        
     if (sig != (MPU6050_ADDRESS & 0x7e))
         return false;
 
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
 
-    Timer_delayUs(100*1000);
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x01); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
-    Timer_delayUs(100*1000);
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_2, 0x0); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
-    Timer_delayUs(100*1000);
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+    delay_ms(100);
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x01); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
+    delay_ms(100);
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_PWR_MGMT_2, 0x0); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
+    delay_ms(100);
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
      //PLL Settling time when changing CLKSEL is max 10ms.  Use 15ms to be sure
-    Timer_delayUs(15*1000);
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_CONFIG, 3); //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
-    Timer_delayUs(100*1000);
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
+    delay_ms(15);
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_CONFIG, 3); //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
+    delay_ms(100);
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
 
     // ACC Init stuff.
     // Accel scale 8g (4096 LSB/g)
-    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_ACCEL_CONFIG, INV_FSR_16G << 3);
+    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_ACCEL_CONFIG, INV_FSR_16G << 3);
 
-//    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_ACCEL_CONFIG2, 3);
+//    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_ACCEL_CONFIG2, 3);
     
-//    ack = i2c_write(MPU6050_ADDRESS, MPU_RA_INT_PIN_CFG,
+//    ret = i2c_write(this->i2c, MPU6050_ADDRESS, MPU_RA_INT_PIN_CFG,
 //            0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
 //    
 //    
@@ -194,7 +191,7 @@ bool mpu6050_config(void)
 
 void mpu6050_update(void)
 {
-    if (!i2c_read(MPU6050_ADDRESS, MPU_RA_ACCEL_XOUT_H, 14, this->buf)) {
+    if (i2c_read(this->i2c, MPU6050_ADDRESS, MPU_RA_ACCEL_XOUT_H, 14, this->buf) < 0) {
         return;
     }
 
@@ -206,9 +203,9 @@ void mpu6050_update(void)
 
     rotate_3f(this->heir.rotation, &acc_new.x, &acc_new.y, &acc_new.z);
 
-    this->heir.acc.x = lowPassFilter2p_apply(&this->heir.acc_filter_x, acc_new.x);
-    this->heir.acc.y = lowPassFilter2p_apply(&this->heir.acc_filter_y, acc_new.y);
-    this->heir.acc.z = lowPassFilter2p_apply(&this->heir.acc_filter_z, acc_new.z);
+    this->heir.acc.x = lpf_apply(&this->heir.acc_filter_x, acc_new.x);
+    this->heir.acc.y = lpf_apply(&this->heir.acc_filter_y, acc_new.y);
+    this->heir.acc.z = lpf_apply(&this->heir.acc_filter_z, acc_new.z);
     
     Vector gyro_new = {
         (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4),
@@ -221,9 +218,9 @@ void mpu6050_update(void)
     
     gyro_new = vector_sub(gyro_new, this->heir.gyro_offset);
     
-	this->heir.gyro.x = lowPassFilter2p_apply(&this->heir.gyro_filter_x, gyro_new.x);
-	this->heir.gyro.y = lowPassFilter2p_apply(&this->heir.gyro_filter_y, gyro_new.y);
-	this->heir.gyro.z = lowPassFilter2p_apply(&this->heir.gyro_filter_z, gyro_new.z);
+	this->heir.gyro.x = lpf_apply(&this->heir.gyro_filter_x, gyro_new.x);
+	this->heir.gyro.y = lpf_apply(&this->heir.gyro_filter_y, gyro_new.y);
+	this->heir.gyro.z = lpf_apply(&this->heir.gyro_filter_z, gyro_new.z);
 
 	this->heir.is_update = true;
 }

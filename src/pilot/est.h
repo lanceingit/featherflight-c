@@ -2,6 +2,7 @@
 
 #include "quaternion.h"
 #include "vector.h"
+#include "dcm.h"
 #include "func_type.h"
 
 
@@ -20,6 +21,8 @@ struct att_est_s
     struct est_s heir;
 
     bool inited;
+    bool valid;
+
     bool use_compass;
 	uint64_t last_time;
 	float dt_max;
@@ -78,6 +81,9 @@ struct alt_est_s
 	float alt;		//U
 	float vel;
 
+    float acc_ned_z;
+    float bias;
+
 	float epv;
 	bool valid;
 
@@ -88,6 +94,8 @@ void att_est_register(struct att_est_s* att);
 float att_get_roll(void);
 float att_get_pitch(void);
 float att_get_yaw(void);
+bool att_valid(void);
+void att_get_dcm(Dcm r);
 
 void alt_est_register(struct alt_est_s* att);
 float alt_est_get_alt(void);

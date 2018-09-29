@@ -71,20 +71,19 @@ bool att_est_q_init(void)
 	Vector j = vector_cross(k, i);
     
 	// Fill rotation matrix
-	float R_buf[3*3];			
-	Matrix R={3,3,R_buf};		//FIXME:not use matrix
-	MAT(R, 0, 0) = i.x;
-	MAT(R, 0, 1) = i.y;
-	MAT(R, 0, 2) = i.z;
-	MAT(R, 1, 0) = j.x;
-	MAT(R, 1, 1) = j.y;
-	MAT(R, 1, 2) = j.z;
-	MAT(R, 2, 0) = k.x;
-	MAT(R, 2, 1) = k.y;
-	MAT(R, 2, 2) = k.z;
+	Dcm r;
+	r[0][0] = i.x;
+	r[0][1] = i.y;
+	r[0][2] = i.z;
+	r[1][0] = j.x;
+	r[1][1] = j.y;
+	r[1][2] = j.z;
+	r[2][0] = k.x;
+	r[2][1] = k.y;
+	r[2][2] = k.z;
 
 	// Convert to quaternion
-	this->heir.q = quaternion_from_dcm(R);
+	this->heir.q = quaternion_from_dcm(r);
 
 	// Compensate for magnetic declination
 	Quaternion decl_rotation = quaternion_from_yaw(this->mag_decl);

@@ -82,39 +82,37 @@ Quaternion quaternion_from_matrix(Matrix m)
     return tmp0;
 }
 
-Quaternion quaternion_from_dcm(Matrix m) 
+Quaternion quaternion_from_dcm(Dcm m) 
 {
-    if(!(m.row == 3 && m.column == 3)) return tmp0;
-
-    float t = matrix_trace(m);
+    float t = dcm_trace(m);
     if (t > 0.0f) {
         t = sqrtf(1.0f + t);
         tmp0.w = 0.5f * t;
         t = 0.5f / t;
-        tmp0.x = (MAT(m,2,1) - MAT(m,1,2)) * t;
-        tmp0.y = (MAT(m,0,2) - MAT(m,2,0)) * t;
-        tmp0.z = (MAT(m,1,0) - MAT(m,0,1)) * t;
-    } else if (MAT(m,0,0) > MAT(m,1,1) && MAT(m,0,0) > MAT(m,2,2)) {
-        t = sqrt(1.0f + MAT(m,0,0) - MAT(m,1,1) - MAT(m,2,2));
+        tmp0.x = (m[2][1] - m[1][2]) * t;
+        tmp0.y = (m[0][2] - m[2][0]) * t;
+        tmp0.z = (m[1][0] - m[0][1]) * t;
+    } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+        t = sqrt(1.0f + m[0][0] - m[1][1]- m[2][2]);
         tmp0.x = 0.5f * t;
         t = 0.5f / t;
-        tmp0.w = (MAT(m,2,1) - MAT(m,1,2)) * t;
-        tmp0.y = (MAT(m,1,0) + MAT(m,0,1)) * t;
-        tmp0.z = (MAT(m,0,2) + MAT(m,2,0)) * t;
-    } else if (MAT(m,1,1) > MAT(m,2,2)) {
-        t = sqrt(1.0f - MAT(m,0,0) + MAT(m,1,1) - MAT(m,2,2));
+        tmp0.w = (m[2][1] - m[1][2]) * t;
+        tmp0.y = (m[1][0] + m[0][1]) * t;
+        tmp0.z = (m[0][2] + m[2][0]) * t;
+    } else if (m[1][1] > m[2][2]) {
+        t = sqrt(1.0f - m[0][0] + m[1][1] - m[2][2]);
         tmp0.y = 0.5f * t;
         t = 0.5f / t;
-        tmp0.w = (MAT(m,0,2) - MAT(m,2,0)) * t;
-        tmp0.x = (MAT(m,1,0) + MAT(m,0,1)) * t;
-        tmp0.z = (MAT(m,2,1) + MAT(m,1,2)) * t;
+        tmp0.w = (m[0][2] - m[2][0]) * t;
+        tmp0.x = (m[1][0] + m[0][1]) * t;
+        tmp0.z = (m[2][1] + m[1][2]) * t;
     } else {
-        t = sqrt(1.0f - MAT(m,0,0) - MAT(m,1,1) + MAT(m,2,2));
+        t = sqrt(1.0f - m[0][0] - m[1][1] + m[2][2]);
         tmp0.z = 0.5f * t;
         t = 0.5f / t;
-        tmp0.w = (MAT(m,1,0) - MAT(m,0,1)) * t;
-        tmp0.x = (MAT(m,0,2) + MAT(m,2,0)) * t;
-        tmp0.y = (MAT(m,2,1) + MAT(m,1,2)) * t;
+        tmp0.w = (m[1][0] - m[0][1]) * t;
+        tmp0.x = (m[0][2] + m[2][0]) * t;
+        tmp0.y = (m[2][1] + m[1][2]) * t;
     }
 
     return tmp0;
@@ -127,6 +125,19 @@ Vector quaternion_to_euler(Quaternion q)
     vtmp0.z = atan2f(2.0f * (q.w * q.z + q.x * q.y), 1.0f - 2.0f * (q.y * q.y + q.z * q.z));
     
     return vtmp0;
+}
+
+void quaternion_to_dcm(Quaternion q, Dcm m)
+{
+    m[0][0] = q.w*q.w + q.x*q.x - q.y*q.y - q.z*q.z;
+    m[0][1] = 2 * (q.x*q.y - q.w*q.z);
+    m[0][2] = 2 * (q.w*q.y + q.x*q.z);
+    m[1][0] = 2 * (q.x*q.y + q.w*q.z);
+    m[1][1] = q.w*q.w - q.x*q.x + q.y*q.y - q.z*q.z;
+    m[1][2] = 2 * (q.y*q.z - q.w*q.x);
+    m[2][0] = 2 * (q.x*q.z - q.w*q.y);
+    m[2][1] = 2 * (q.w*q.x + q.y*q.z);
+    m[2][2] = q.w*q.w - q.x*q.x - q.y*q.y + q.z*q.z;
 }
 
 float quaternion_length(Quaternion q)

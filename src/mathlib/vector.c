@@ -1,6 +1,8 @@
 #include <math.h>
+#include <stdint.h>
 #include "vector.h"
 #include "mathlib.h"
+
 
 static Vector tmp0;
 
@@ -91,3 +93,18 @@ Vector vector_reverse(Vector v)
     return tmp0;
 }
 
+Vector vector_rotate(Vector v, Dcm d)
+{
+    uint8_t i;
+
+    for(i = 0; i < 3; i++) {
+        tmp0.x += d[0][i] * v.x;
+    }
+    for(i = 0; i < 3; i++) {
+        tmp0.y += d[0][i] * v.y;
+    }
+    for(i = 0; i < 3; i++) {
+        tmp0.z += d[0][i] * v.z;
+    }
+    return tmp0;
+}

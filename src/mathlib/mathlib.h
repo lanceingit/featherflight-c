@@ -13,6 +13,8 @@
 #define POW2(_x)		((_x) * (_x))
 #define MAX(a,b)        (a>b? a:b)
 
+#define CONSTANTS_ONE_G     9.80665f;						// m/s^2
+
 float inv_sqrt(float x);
 float constrain(float val, float min_val, float max_val);
 float wrap_pi(float bearing);

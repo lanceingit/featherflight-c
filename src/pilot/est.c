@@ -26,6 +26,16 @@ float att_get_yaw(void)
     return est_att->yaw;
 }
 
+bool att_valid(void)
+{
+	return est_att->valid;  
+}
+
+void att_get_dcm(Dcm r)
+{
+	quaternion_to_dcm(est_att->q, r);
+}
+
 void est_init(void)
 {
     est_att->use_compass = false;

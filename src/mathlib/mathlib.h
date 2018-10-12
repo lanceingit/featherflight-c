@@ -12,6 +12,7 @@
 
 #define POW2(_x)		((_x) * (_x))
 #define MAX(a,b)        (a>b? a:b)
+#define MIN(a,b)        (a<b? a:b)
 
 #define CONSTANTS_ONE_G     9.80665f;						// m/s^2
 

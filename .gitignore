@@ -6,6 +6,15 @@
 *.ko
 *.obj
 *.elf
+*.crf
+*.__i
+*.axf
+*.dep
+*.htm
+*.lnp
+*.lst
+
+
 
 # Linker output
 *.ilk
@@ -35,6 +44,8 @@
 *.i*86
 *.x86_64
 *.hex
+mdk/obj/*.txt
+*.uvguix.*
 
 # Debug files
 *.dSYM/

@@ -9,6 +9,7 @@
 #include "matrix.h"
 #include "lpf.h"
 #include "mathlib.h"
+#include "param.h"
 
 #if 0
 #define LINK_DEBUG(a) _link->send_text(a)
@@ -28,8 +29,17 @@ struct att_est_q_s att_est_q = {
 static struct att_est_q_s* this=&att_est_q;
 
 
+PARAM_GROUP_START
+PARAM_ADD(bias_max)
+PARAM_ADD(w_accel)
+PARAM_ADD(w_mag)
+PARAM_ADD(w_gyro_bias)
+PARAM_GROUP_STOP
+
+
 bool att_est_q_init(void)
-{
+{ 
+    PARAM_REGISTER(att)
 	lpf_init(&this->acc_filter_x, 625.0f, 30.0f);
 	lpf_init(&this->acc_filter_y, 625.0f, 30.0f);
 	lpf_init(&this->acc_filter_z, 625.0f, 30.0f);
@@ -38,10 +48,10 @@ bool att_est_q_init(void)
 	lpf_init(&this->gyro_filter_z, 625.0f, 30.0f);
     this->mag_decl_auto = true;
     this->mag_decl = 0.0f;
-	this->bias_max = 10.05f;
-	this->w_accel = 0.2f;
-	this->w_mag = 0.1f;
-	this->w_gyro_bias = 0.1f;
+	this->bias_max = PARAM_GET(bias_max);//10.05f;
+	this->w_accel = PARAM_GET(w_accel);//0.2f;
+	this->w_mag = PARAM_GET(w_mag);//0.1f;
+	this->w_gyro_bias = PARAM_GET(w_gyro_bias;);//0.1f;
     
     
     inertial_sensor_get_acc(0, &this->heir.acc);

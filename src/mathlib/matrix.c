@@ -1,9 +1,16 @@
 #include "matrix.h"
 #include <stdlib.h>
 #include <string.h>
+#include "mathlib.h"
 
 static float tmp_buf[30*30];
 static Matrix tmp0 = {30,30,tmp_buf};
+
+void matrix_init(Matrix* m, uint8_t row, uint8_t column)
+{
+    m->row = row;
+    m->column = column;
+}
 
 float matrix_item(Matrix m, uint8_t row, uint8_t column)
 {

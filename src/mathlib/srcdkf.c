@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "mathlib.h"
+#include "matrix.h"
 
 float *srcdkfGetState(struct srcdkf_s* f) 
 {

@@ -1,0 +1,8 @@
+{
+"ATT":{
+"ATT_BIAS_MAX":10.05,
+"ATT_W_ACCEL":0.2,
+"ATT_W_MAG":0.1,
+"ATT_W_GYRO_BIAS":0.1
+}
+}

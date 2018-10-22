@@ -12,7 +12,7 @@ struct param_s {
 #define PARAM_TYPE    _params_local_s
 
 #define PARAM_GROUP_START \
-    struct PARAM_TYPE {  
+    static struct PARAM_TYPE {  
 
 #define PARAM_ADD(NAME) \
     float _##NAME;
@@ -32,7 +32,7 @@ typedef float (*param_get_func)(void);
 typedef void (*param_set_func)(float);
 
 struct param_val {
-	char name[20];
+	char name[40];
 	param_get_func get;
 	param_set_func set;
 };

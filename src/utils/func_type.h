@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include "rotation.h"
 
 typedef bool (init_func)(void);

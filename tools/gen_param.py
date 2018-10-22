@@ -125,7 +125,28 @@ static inline void param_set_%s(float v)
 
     f.close()    
     
+
+def generate_param_add_h(directory, group, param):  
+    '''group_param.h'''
+
+    group_low = group.lower()
     
+    f = open(os.path.join(directory, group_low+"_param.h"), mode='w')
+
+    str = '''#pragma once
+    
+PARAM_GROUP_START\n'''
+    f.write(str)
+    
+    for param_name in param: 
+        str = '''PARAM_ADD(%s)\n''' %param_name
+        f.write(str)
+
+    str = '''PARAM_GROUP_STOP\n'''
+    f.write(str)
+
+
+
 
 j = open("../src/config/ff.param", mode='r')   
 
@@ -147,6 +168,8 @@ for i in range(len(param)):
         else:    
             param_change=True
             break
+    line += 1
+
     
 if param_change==True:  
     for i in files("../src/param", "param_gen_*.h"):
@@ -158,6 +181,7 @@ if param_change==True:
     for i in range(len(param)):    
         param_group = param.keys()[i]
         generate_param_group_h("../src/param", param_group, param[param_group])
+        generate_param_add_h("../src/param", param_group, param[param_group])
     print "generate param api success\n"
 else:
     print "param no change,skip generate\n"

@@ -26,6 +26,21 @@ float att_get_yaw(void)
     return est_att->yaw;
 }
 
+float att_get_roll_rate(void)
+{
+    return est_att->roll_rate;
+}
+
+float att_get_pitch_rate(void)
+{
+    return est_att->pitch_rate;
+}
+
+float att_get_yaw_rate(void)
+{
+    return est_att->yaw_rate;
+}
+
 bool att_valid(void)
 {
 	return est_att->valid;  

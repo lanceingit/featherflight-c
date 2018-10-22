@@ -94,6 +94,9 @@ void att_est_register(struct att_est_s* att);
 float att_get_roll(void);
 float att_get_pitch(void);
 float att_get_yaw(void);
+float att_get_roll_rate(void);
+float att_get_pitch_rate(void);
+float att_get_yaw_rate(void);
 bool att_valid(void);
 void att_get_dcm(Dcm r);
 

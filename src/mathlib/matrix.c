@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "mathlib.h"
+#include <math.h>
 
 static float tmp_buf[30*30];
 static Matrix tmp0 = {30,30,tmp_buf};

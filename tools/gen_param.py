@@ -2,6 +2,7 @@ import os
 import json
 import glob
 import re
+import sys
 
 def files(curr_dir = '.', ext = '*.exe'):
     """curr file"""
@@ -135,27 +136,34 @@ def generate_param_add_h(directory, group, param):
 
     str = '''#pragma once
     
-PARAM_GROUP_START\n'''
+static struct _params_local_s {\n'''
     f.write(str)
     
     for param_name in param: 
-        str = '''PARAM_ADD(%s)\n''' %param_name
+        str = '''\tfloat _%s;\n''' %param_name
         f.write(str)
 
-    str = '''PARAM_GROUP_STOP\n'''
+    str = '''} _local_param = {\n'''
+    f.write(str)
+
+    for param_name in param: 
+        str = '''\t._%s = %ff,\n''' %(param_name,param[param_name])
+        f.write(str)
+        
+    str = '''};\n'''
     f.write(str)
 
 
+path = sys.argv[1]    
 
-
-j = open("../src/config/ff.param", mode='r')   
+j = open(path+"/src/config/ff.param", mode='r')   
 
 param = json.load(j)
 #print param
 
 #print len(param)
   
-f = open(os.path.join("../src/param", "param_api.c"), mode='r')
+f = open(os.path.join(path+"/src/param", "param_api.c"), mode='r')
   
 lines = f.readlines()
 line=5
@@ -170,18 +178,18 @@ for i in range(len(param)):
             break
     line += 1
 
-    
+param_change=True    
 if param_change==True:  
-    for i in files("../src/param", "param_gen_*.h"):
+    for i in files(path+"src/param", "param_gen_*.h"):
         #print i
         os.remove(i)  
       
-    generate_api_c("../src/param", param)
-    generate_api_h("../src/param", param)
+    generate_api_c(path+"/src/param", param)
+    generate_api_h(path+"/src/param", param)
     for i in range(len(param)):    
         param_group = param.keys()[i]
-        generate_param_group_h("../src/param", param_group, param[param_group])
-        generate_param_add_h("../src/param", param_group, param[param_group])
+        generate_param_group_h(path+"/src/param", param_group, param[param_group])
+        generate_param_add_h(path+"/src/param", param_group, param[param_group])
     print "generate param api success\n"
 else:
     print "param no change,skip generate\n"

@@ -1,5 +1,15 @@
 #pragma once
 
+typedef float (*param_get_func)(void);
+typedef void (*param_set_func)(float);
+
+
+struct param_val {
+	char name[40];
+	param_get_func get;
+	param_set_func set;
+};
+
 #include "param_api.h"
 
 struct param_s {
@@ -28,12 +38,5 @@ struct param_s {
 int8_t param_get_val(char* name, float* val);
 int8_t param_set_val(char* name, float val);
 
-typedef float (*param_get_func)(void);
-typedef void (*param_set_func)(float);
 
-struct param_val {
-	char name[40];
-	param_get_func get;
-	param_set_func set;
-};
 

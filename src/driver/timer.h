@@ -8,21 +8,23 @@
 
 #pragma once
 
-typedef uint64_t time_t;
+typedef uint64_t times_t;
 
 void timer_init(void);
 void timer_disable(void);
 
-time_t timer_create(uint32_t us);
-bool timer_is_timeout(time_t t);
+times_t timer_new(uint32_t us);
+bool timer_is_timeout(times_t t);
 
-time_t timer_now(void);
-time_t timer_elapsed(time_t* t);
+times_t timer_now(void);
+times_t timer_elapsed(times_t* t);
 
 void delay(float s);
 void delay_ms(uint32_t ms);
 void delay_us(uint32_t us);
+#ifdef F3_EVO
 void sleep(float s);
+#endif
 
 
 

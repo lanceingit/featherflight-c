@@ -8,13 +8,16 @@
 #include "board.h"
 
 #include "timer.h"
+#ifdef LINUX 
+#include <time.h> 
+#endif
 
-
-static volatile time_t timer_cnt = 0;
+static volatile times_t timer_cnt = 0;
 
 
 void timer_init()
 {
+#ifdef F3_EVO    
     TIM_TimeBaseInitTypeDef    TIM_TimeBaseStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
     
@@ -39,30 +42,34 @@ void timer_init()
     TIM_ITConfig(TIM7, TIM_IT_Update, ENABLE);
     
     TIM_Cmd(TIM7, ENABLE);
+#endif    
 }
 
 
 void timer_disable(void)
 {
+#ifdef F3_EVO    
     NVIC_DisableIRQ(TIM7_IRQn);    
+#endif    
 }
 
-
+#ifdef F3_EVO
 static void timer_irs(void)
 {    
     TIM_ClearFlag(TIM7, TIM_IT_Update);
     timer_cnt++;
 }
+#endif 
 
-time_t timer_create(uint32_t us)
+times_t timer_new(uint32_t us)
 {
-    return (timer_cnt + (us/10) - 1);
+    return timer_now()+us;
 }
 
 
-bool timer_is_timeout(time_t t)
+bool timer_is_timeout(times_t t)
 {
-    if(t >= timer_cnt)
+    if(t >= timer_now())
     {
         return false;
     }
@@ -72,51 +79,62 @@ bool timer_is_timeout(time_t t)
     }
 }
 
-time_t timer_now()
+times_t timer_now()
 {
+#ifdef F3_EVO     
 	return timer_cnt*10;
+#elif LINUX
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC,&now);
+
+    return (times_t)(now.tv_sec*1000000+now.tv_nsec / 1000);
+#endif    
 }
 
-time_t timer_elapsed(time_t* t)
+times_t timer_elapsed(times_t* t)
 {
-	return timer_cnt*10 - *t;
+	return timer_now() - *t;
 }
 
 void delay(float s)
 {
-    volatile time_t wait;
+    volatile times_t wait;
 
-    wait = timer_create((uint32_t)(s*1000*1000));
+    wait = timer_new((uint32_t)(s*1000*1000));
     while (!timer_is_timeout(wait));
 }
 
 void delay_ms(uint32_t ms)
 {
-    volatile time_t wait;
+    volatile times_t wait;
 
-    wait = timer_create(ms*1000);
+    wait = timer_new(ms*1000);
     while (!timer_is_timeout(wait));
 }
 
 void delay_us(uint32_t us)
 {
-    volatile time_t wait;
+    volatile times_t wait;
 
-    wait = timer_create(us);
+    wait = timer_new(us);
     while (!timer_is_timeout(wait));
 }
-    
+
+#ifdef F3_EVO    
 void sleep(float s)
 {
-    volatile time_t wait;
+    volatile times_t wait;
 
-    wait = timer_create((uint32_t)(s*1000*1000));
+    wait = timer_new((uint32_t)(s*1000*1000));
     while (!timer_is_timeout(wait));
 }
+#endif
 
+#ifdef F3_EVO
 void TIM7_IRQHandler(void)
 {
     timer_irs();
 }
+#endif
 
 

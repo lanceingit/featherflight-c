@@ -15,6 +15,7 @@ struct inertial_sensor_s
     Vector acc;
     Vector gyro;
     Vector gyro_offset;
+    float temp;
 
 	struct lpf_s	acc_filter_x;
 	struct lpf_s	acc_filter_y;
@@ -62,6 +63,7 @@ float inertial_sensor_get_acc_z(uint8_t ins);
 float inertial_sensor_get_gyro_x(uint8_t ins);
 float inertial_sensor_get_gyro_y(uint8_t ins);
 float inertial_sensor_get_gyro_z(uint8_t ins);
+float inertial_sensor_get_temp(uint8_t ins);
 void inertial_sensor_set_gyro_offset_x(uint8_t ins, float f);
 void inertial_sensor_set_gyro_offset_y(uint8_t ins, float f);
 void inertial_sensor_set_gyro_offset_z(uint8_t ins, float f);
@@ -85,7 +87,11 @@ float baro_get_temp(uint8_t ins);
 
 void sensor_init(void);
 
-
+#ifdef F3_EVO
 #include "mpu6050.h"
 #include "hmc5883.h"
 #include "ms5611.h"
+#elif LINUX
+#include "mpu6050_linux.h"
+#include "spl06_linux.h"
+#endif

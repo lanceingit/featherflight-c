@@ -156,7 +156,7 @@ bool spi_flash_isReady()
 
 bool spi_flash_waitForReady(uint32_t timeoutMillis)
 {
-    time_t time = timer_now();
+    times_t time = timer_now();
     while (!spi_flash_isReady()) {
         if (timer_now() - time > timeoutMillis*1000) {
             return false;

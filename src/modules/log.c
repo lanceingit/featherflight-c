@@ -5,12 +5,10 @@
 #include "timer.h"
 #include "mtd.h"
 #include "att_est_q.h"
-#include "mpu6050.h"
-#include "ms5611.h"
-#include "hmc5883.h"
 #include "est.h"
+#include "sensor.h"
 
-static time_t timer[log_formats_num];
+static times_t timer[sizeof(log_formats) / sizeof(log_formats[0])];
 static bool record;
 
 

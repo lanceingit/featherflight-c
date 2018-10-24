@@ -4,6 +4,8 @@
 #include "timer.h"
 #include "sensor.h"
 
+#define LINK_DEBUG  printf
+
 static struct att_est_s* est_att;
 
 void att_est_register(struct att_est_s* att)
@@ -73,7 +75,7 @@ void est_att_run(void)
 		est_att->acc.z = inertial_sensor_get_acc_z(0);
 
 		if (vector_length(est_att->acc) < 0.01f) {
-			//LINK_DEBUG("WARNING: degenerate accel!");
+			LINK_DEBUG("WARNING: degenerate accel!");
 			return;
 		}
 	} else {
@@ -84,13 +86,13 @@ void est_att_run(void)
         compass_get_mag(0, &est_att->mag);
 
 		if (vector_length(est_att->mag) < 0.01f) {
-			//LINK_DEBUG("WARNING: degenerate mag!");
+			LINK_DEBUG("WARNING: degenerate mag!");
 			return;
 		}
     }
 
 	/* time from previous iteration */
-	time_t now = timer_now();
+	times_t now = timer_now();
 	float dt = (est_att->last_time > 0) ? ((now  - est_att->last_time) / 1000000.0f) : 0.00001f;
 	est_att->last_time = now;
 
@@ -105,8 +107,8 @@ void est_att_run(void)
     Vector euler = quaternion_to_euler(est_att->q);  
 
     est_att->roll_rate = inertial_sensor_get_gyro_x(0) + est_att->gyro_bias.x;
-    est_att->pitch_rate = inertial_sensor_get_gyro_x(0) + est_att->gyro_bias.y;
-    est_att->yaw_rate = inertial_sensor_get_gyro_x(0) + est_att->gyro_bias.z;
+    est_att->pitch_rate = inertial_sensor_get_gyro_y(0) + est_att->gyro_bias.y;
+    est_att->yaw_rate = inertial_sensor_get_gyro_z(0) + est_att->gyro_bias.z;
 
     est_att->roll = euler.x;
     est_att->pitch = euler.y;

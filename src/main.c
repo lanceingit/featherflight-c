@@ -1,26 +1,26 @@
 #include "board.h"
 
 #include "sensor.h"
+#ifdef F3_EVO
 #include "spi_flash.h"
 #include "mtd.h"
+#endif
 #include "log.h"
 #include "link_mavlink.h"
 #include "mavlink_log.h"
-#include "att_est_q.h"
 #include "timer.h"
 #include "perf.h"
 #include "vector.h"
-#include "att_est_q.h"
 #include "est.h"
 
 
-static time_t last_inertial_sensor_update_time = 0;
-static time_t last_compass_update_time = 0;
-static time_t last_baro_update_time = 0;
-static time_t last_heartbeat_update_time = 0;
-static time_t last_imu_update_time = 0;
-static time_t last_att_update_time = 0;
-//static time_t last_att_run_time = 0;
+static times_t last_inertial_sensor_update_time = 0;
+static times_t last_compass_update_time = 0;
+static times_t last_baro_update_time = 0;
+static times_t last_heartbeat_update_time = 0;
+static times_t last_imu_update_time = 0;
+static times_t last_att_update_time = 0;
+//static times_t last_att_run_time = 0;
 
 
 
@@ -45,44 +45,53 @@ struct perf_s att_elapsed;
 
 int main() 
 {    
+    printf("hello feather flight\n");
+#ifdef F3_EVO    
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
     RCC_ClearFlag();
-        
+#endif        
     timer_init();    
+#ifdef F3_EVO    
     spi_flash_init();
     mtd_init();
     mtd_test();
-    log_init();
-    link_mavlink_init();
+#endif        
+    // log_init();
+     link_mavlink_init();
 
-    inertial_sensor_register(&mpu6050.heir);
-    compass_register(&hmc5883.heir);
-    baro_register(&ms5611.heir);
+    inertial_sensor_register(&mpu6050_linux.heir);
+//    compass_register(&hmc5883.heir);
+    baro_register(&spl06_linux.heir);
     sensor_init();
 
     gyro_cal();
 
     att_est_register(&att_est_q.heir);
+//    att_est_register(&att_est_cf.heir);
     est_init();
     perf_init(&main_perf);
     perf_init(&att_perf);
     perf_init(&att_elapsed);
 
+
     while(1)
     {
+    #ifdef F3_EVO        
         led_on();
         led_off();      
-        linkSendTask();
-        mavlink_log_run();
-        linkRecvTask();
-        sensorTask();
-        attTask();
+    #endif        
+         linkSendTask();
+//        mavlink_log_run();
+//        linkRecvTask();
+       sensorTask();
+       attTask();
 //        logTask();
 //        mtd_sync();
         
+//        printf("pilot run..%lld\n", timer_now());
 
-    //  Timer::delayUs(1*1000*1000);
-        perf_interval(&main_perf);
+//        delay(1);
+         perf_interval(&main_perf);
         
     }
     
@@ -90,7 +99,7 @@ int main()
 }
 
 
-
+#ifdef F3_EVO
 void led_init(void)
 {
 	
@@ -115,6 +124,7 @@ void led_off(void)
 {
     GPIO_SetBits(GPIOB, GPIO_Pin_3);
 }
+#endif        
 
 void linkSendTask(void)
 {
@@ -152,12 +162,19 @@ void linkSendTask(void)
                                vector_length(v));
         link_mavlink_msg_send(&msg);
 
-        compass_get_mag(0, &v);
+        inertial_sensor_get_gyro(0, &v);
         mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
                                timer_now(),
-                               "mag_len",
+                               "gyro_len",
                                vector_length(v));
         link_mavlink_msg_send(&msg);
+
+        // compass_get_mag(0, &v);
+        // mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+        //                        timer_now(),
+        //                        "mag_len",
+        //                        vector_length(v));
+        // link_mavlink_msg_send(&msg);
 
         last_imu_update_time = timer_now();
     }
@@ -169,21 +186,23 @@ void linkSendTask(void)
                                att_get_roll(),
                                att_get_pitch(),
                                att_get_yaw(),
-                               0,0,0         
+                               att_get_roll_rate(),
+                               att_get_pitch_rate(),
+                               att_get_yaw_rate()
                                  );
         link_mavlink_msg_send(&msg);
 
 
-//        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
-//                               timer_now(),
-//                               "bias_x",
-//                               att_get_bias_x());
-//        link_mavlink_msg_send(&msg);
-//        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
-//                               timer_now(),
-//                               "bias_y",
-//                               att_get_bias_y());
-//        link_mavlink_msg_send(&msg);
+       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+                              timer_now(),
+                              "bias_x",
+                              att_est_q.heir.gyro_bias.x);
+       link_mavlink_msg_send(&msg);
+       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+                              timer_now(),
+                              "bias_y",
+                              att_est_q.heir.gyro_bias.y);
+       link_mavlink_msg_send(&msg);
 
 //        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
 //                               timer_now(),
@@ -196,16 +215,16 @@ void linkSendTask(void)
 //                               att_get_corr_acc_y());
 //        link_mavlink_msg_send(&msg);
 
-//        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
-//                               timer_now(),
-//                               "corr_all_x",
-//                               att_get_corr_all_x());
-//        link_mavlink_msg_send(&msg);
-//        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
-//                               timer_now(),
-//                               "corr_all_y",
-//                               att_get_corr_all_y());
-//        link_mavlink_msg_send(&msg);
+       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+                              timer_now(),
+                              "corr_all_x",
+                              att_est_q.heir.corr.x);
+       link_mavlink_msg_send(&msg);
+       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+                              timer_now(),
+                              "corr_all_y",
+                              att_est_q.heir.corr.y);
+       link_mavlink_msg_send(&msg);
 
         last_att_update_time = timer_now();
     }
@@ -229,11 +248,11 @@ void sensorTask(void)
         inertial_sensor_update(0);
         last_inertial_sensor_update_time = timer_now();
     }
-    if(timer_now() - last_compass_update_time > (1000000 / 150))
-    {        
-        compass_update(0);
-        last_compass_update_time = timer_now();
-    }
+    // if(timer_now() - last_compass_update_time > (1000000 / 150))
+    // {        
+    //     compass_update(0);
+    //     last_compass_update_time = timer_now();
+    // }
     if(timer_now() - last_baro_update_time > 25000)
     {
         baro_update(0);
@@ -285,13 +304,13 @@ void gyro_cal(void)         //TODO:put into sensor
 	}
 }
 
-void logTask(void)
-{
-	if(!mtd_is_full() && log_need_record())
-	{
-	    log_write_att(50);
-	    log_write_imu(500);
-	    log_write_sens(50);
-	}
-}
+// void logTask(void)
+// {
+// 	if(!mtd_is_full() && log_need_record())
+// 	{
+// 	    log_write_att(50);
+// 	    log_write_imu(500);
+// 	    log_write_sens(50);
+// 	}
+// }
 

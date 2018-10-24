@@ -4,13 +4,13 @@
 
 struct perf_s
 {
-    time_t t0;
-    time_t t1;
+    times_t t0;
+    times_t t1;
     uint64_t cnt;
-    time_t avg;
-    time_t sum;
-    time_t t_max;
-    time_t t_min;
+    times_t avg;
+    times_t sum;
+    times_t t_max;
+    times_t t_min;
 };
 
 void perf_init(struct perf_s* perf);

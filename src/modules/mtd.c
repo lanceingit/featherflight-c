@@ -2,7 +2,9 @@
 #include <string.h>
 
 #include "mtd.h"
+#ifdef F3_EVO
 #include "spi_flash.h"
+#endif
 #include "fifo.h"
 
 
@@ -18,7 +20,11 @@ enum mtd_status
 
 static struct fifo_s write_fifo;
 static uint8_t buf[BUF_SIZE];
+#ifdef F3_EVO
 static uint8_t page_buf[M25P16_PAGESIZE];
+#else
+static uint8_t page_buf[100];
+#endif
 
 static uint32_t write_addr;
 static uint32_t read_addr;
@@ -41,6 +47,7 @@ void mtd_init()
 
 void mtd_test()
 {
+#ifdef F3_EVO	
 	if(spi_flash_eraseSector(0))
 //	while(1)
 	{
@@ -62,6 +69,7 @@ void mtd_test()
 
 		}
 	}
+#endif	
 }
 
 void mtd_write(uint8_t* data, uint16_t len)
@@ -82,6 +90,7 @@ void mtd_write(uint8_t* data, uint16_t len)
 
 uint16_t mtd_read(uint32_t offset, uint8_t* data, uint16_t len)
 {
+#ifdef F3_EVO	
 	uint16_t read_len = spi_flash_readBytes(offset, data, len);
 
 	read_addr += read_len;
@@ -89,11 +98,15 @@ uint16_t mtd_read(uint32_t offset, uint8_t* data, uint16_t len)
 	if(read_addr == write_addr) read_addr = 0;
 
 	return read_len;
+#else 
+	return 0;	
+#endif	
 }
 
 
 void mtd_sync()
 {
+#ifdef F3_EVO	
 	if(!has_erase && write_addr % spi_flash_getGeometry()->sectorSize ==0)
 	{
 		status = MTD_ERASE;
@@ -152,11 +165,16 @@ void mtd_sync()
             status = MTD_IDLE;
 		}
 	}
+#endif	
 }
 
 uint32_t mtd_get_space()
 {
+#ifdef F3_EVO	
 	return spi_flash_getGeometry()->totalSize - write_addr;
+#else 
+	return 0;
+#endif		
 }
 
 bool mtd_is_full()

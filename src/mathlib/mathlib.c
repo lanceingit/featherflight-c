@@ -47,3 +47,8 @@ float wrap_pi(float bearing)
 
 	return bearing;
 }
+
+float press2alt(float p)
+{
+	return 44330 * (1 - powf(((float)p / (float)1013.25),(1/5.255)));  //FIXME:
+}

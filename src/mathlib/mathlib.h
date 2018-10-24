@@ -19,3 +19,4 @@
 float inv_sqrt(float x);
 float constrain(float val, float min_val, float max_val);
 float wrap_pi(float bearing);
+float press2alt(float p);

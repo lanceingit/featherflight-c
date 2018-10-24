@@ -13,8 +13,8 @@
 
 #include "att_param.h"
 
-#if 0
-#define LINK_DEBUG(a) _link->send_text(a)
+#if 1
+#define LINK_DEBUG printf
 #else
 #define LINK_DEBUG(a)
 #endif
@@ -33,6 +33,7 @@ static struct att_est_q_s* this=&att_est_q;
 
 bool att_est_q_init(void)
 { 
+	LINK_DEBUG("att q init \n");
     PARAM_REGISTER(att)
 	lpf_init(&this->acc_filter_x, 625.0f, 30.0f);
 	lpf_init(&this->acc_filter_y, 625.0f, 30.0f);
@@ -46,6 +47,7 @@ bool att_est_q_init(void)
 	this->w_accel = PARAM_GET(ATT_W_ACCEL);//0.2f;
 	this->w_mag = PARAM_GET(ATT_W_MAG);//0.1f;
 	this->w_gyro_bias = PARAM_GET(ATT_W_GYRO_BIAS;);//0.1f;
+	printf("w_gyro_bias=%f\n", this->w_gyro_bias);
     
     
     inertial_sensor_get_acc(0, &this->heir.acc);
@@ -63,7 +65,7 @@ bool att_est_q_init(void)
     {
         inertial_sensor_get_acc(0, &this->heir.mag);
         //esprintf(buf, "mag0:%.3f 1:%.3f 2:%.3f", (double)_mag(0),(double)_mag(1),(double)_mag(2));
-        LINK_DEBUG(buf);
+        //LINK_DEBUG(buf);
         if (vector_length(this->heir.mag) < 0.01f) {
             LINK_DEBUG("init: degenerate mag!");
         }

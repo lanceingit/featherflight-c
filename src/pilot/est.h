@@ -107,3 +107,5 @@ float alt_est_get_vel(void);
 void est_init(void);
 void est_att_run(void);
 
+#include "att_est_q.h"
+#include "att_est_cf.h"

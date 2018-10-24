@@ -19,6 +19,8 @@ bool timer_is_timeout(times_t t);
 times_t timer_now(void);
 times_t timer_elapsed(times_t* t);
 
+bool timer_check(times_t* t, uint32_t us);
+    
 void delay(float s);
 void delay_ms(uint32_t ms);
 void delay_us(uint32_t us);

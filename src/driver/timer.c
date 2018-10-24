@@ -96,6 +96,15 @@ times_t timer_elapsed(times_t* t)
 	return timer_now() - *t;
 }
 
+bool timer_check(times_t* t, uint32_t us)
+{
+    if(timer_now() - *t > us) {
+        *t = timer_now();
+        return true;
+    }
+    return false;    
+}
+
 void delay(float s)
 {
     volatile times_t wait;

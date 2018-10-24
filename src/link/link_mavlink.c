@@ -35,11 +35,15 @@ uint8_t _txBuf[TX_BUF_SIZE];
 
 mavlink_status_t _r_mavlink_status;
 mavlink_message_t msg;
+mavlink_system_t mavlink_system;
 
 void handle_log_request_list(mavlink_message_t *msg);
 
 void link_mavlink_init()
 {   
+    mavlink_system.sysid = MAV_SYS;
+    mavlink_system.compid = MAV_COMP;
+    
 #ifdef F3_EVO   
     _port = serial_open(USART1, 921600, _rxBuf, RX_BUF_SIZE, _txBuf, TX_BUF_SIZE);
 #elif LINUX
@@ -139,7 +143,16 @@ bool link_mavlink_recv(mavlink_message_t* msg)
 	return false;
 }
 
-
+void mavlink_send(mavlink_channel_t chan, const uint8_t *ch, uint16_t length)
+{
+    if(chan == MAVLINK_COMM_0){
+    #ifdef F3_EVO
+        serial_write(_port, (uint8_t*)ch, length);  
+    #elif LINUX
+        sendto(_fd, ch, length, 0, (struct sockaddr *)&bcast_addr, addr_len);    
+    #endif
+    }
+}
 
 
 

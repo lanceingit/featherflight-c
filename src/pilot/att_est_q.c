@@ -13,10 +13,10 @@
 
 #include "att_param.h"
 
-#if 1
+#ifdef LINUX
 #define LINK_DEBUG printf
 #else
-#define LINK_DEBUG(a)
+#define LINK_DEBUG(avg, ...)
 #endif
 
 struct att_est_q_s att_est_q = {
@@ -47,10 +47,10 @@ bool att_est_q_init(void)
 	this->w_accel = PARAM_GET(ATT_W_ACCEL);//0.2f;
 	this->w_mag = PARAM_GET(ATT_W_MAG);//0.1f;
 	this->w_gyro_bias = PARAM_GET(ATT_W_GYRO_BIAS;);//0.1f;
-	printf("w_gyro_bias=%f\n", this->w_gyro_bias);
+	LINK_DEBUG("w_gyro_bias=%f\n", this->w_gyro_bias);
     
     
-    inertial_sensor_get_acc(0, &this->heir.acc);
+    imu_get_acc(0, &this->heir.acc);
 
 	Vector k = vector_normalized(vector_reverse(this->heir.acc));
 
@@ -63,7 +63,7 @@ bool att_est_q_init(void)
 
 	if(this->heir.use_compass)
     {
-        inertial_sensor_get_acc(0, &this->heir.mag);
+        imu_get_acc(0, &this->heir.mag);
         //esprintf(buf, "mag0:%.3f 1:%.3f 2:%.3f", (double)_mag(0),(double)_mag(1),(double)_mag(2));
         //LINK_DEBUG(buf);
         if (vector_length(this->heir.mag) < 0.01f) {

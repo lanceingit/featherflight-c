@@ -6,7 +6,7 @@
 #include "func_type.h"
 
 
-struct inertial_sensor_s
+struct imu_s
 {
     //member
     bool ready;    
@@ -53,24 +53,24 @@ struct baro_s
     update_func* update;     
 };
 
-void inertial_sensor_register(struct inertial_sensor_s* item);
-void inertial_sensor_update(uint8_t ins);
-void inertial_sensor_get_acc(uint8_t ins, Vector* acc);
-void inertial_sensor_get_gyro(uint8_t ins, Vector* gyro);
-float inertial_sensor_get_acc_x(uint8_t ins);
-float inertial_sensor_get_acc_y(uint8_t ins);
-float inertial_sensor_get_acc_z(uint8_t ins);
-float inertial_sensor_get_gyro_x(uint8_t ins);
-float inertial_sensor_get_gyro_y(uint8_t ins);
-float inertial_sensor_get_gyro_z(uint8_t ins);
-float inertial_sensor_get_temp(uint8_t ins);
-void inertial_sensor_set_gyro_offset_x(uint8_t ins, float f);
-void inertial_sensor_set_gyro_offset_y(uint8_t ins, float f);
-void inertial_sensor_set_gyro_offset_z(uint8_t ins, float f);
-bool inertial_sensor_ready(uint8_t ins);
-void inertial_sensor_set_ready(uint8_t ins);
-bool inertial_sensor_is_update(uint8_t ins);
-void inertial_sensor_clean_update(uint8_t ins);
+void imu_register(struct imu_s* item);
+void imu_update(uint8_t ins);
+void imu_get_acc(uint8_t ins, Vector* acc);
+void imu_get_gyro(uint8_t ins, Vector* gyro);
+float imu_get_acc_x(uint8_t ins);
+float imu_get_acc_y(uint8_t ins);
+float imu_get_acc_z(uint8_t ins);
+float imu_get_gyro_x(uint8_t ins);
+float imu_get_gyro_y(uint8_t ins);
+float imu_get_gyro_z(uint8_t ins);
+float imu_get_temp(uint8_t ins);
+void imu_set_gyro_offset_x(uint8_t ins, float f);
+void imu_set_gyro_offset_y(uint8_t ins, float f);
+void imu_set_gyro_offset_z(uint8_t ins, float f);
+bool imu_ready(uint8_t ins);
+void imu_set_ready(uint8_t ins);
+bool imu_is_update(uint8_t ins);
+void imu_clean_update(uint8_t ins);
 
 void compass_register(struct compass_s* item);
 void compass_update(uint8_t ins);

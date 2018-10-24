@@ -4,7 +4,11 @@
 #include "timer.h"
 #include "sensor.h"
 
-#define LINK_DEBUG  printf
+#ifdef LINUX
+#define LINK_DEBUG printf
+#else
+#define LINK_DEBUG(avg, ...)
+#endif
 
 static struct att_est_s* est_att;
 
@@ -65,14 +69,14 @@ void est_init(void)
 
 void est_att_run(void)
 {
-	if(inertial_sensor_ready(0)) {
-		est_att->gyro.x = inertial_sensor_get_gyro_x(0);
-		est_att->gyro.y = inertial_sensor_get_gyro_y(0);
-		est_att->gyro.z = inertial_sensor_get_gyro_z(0);
+	if(imu_ready(0)) {
+		est_att->gyro.x = imu_get_gyro_x(0);
+		est_att->gyro.y = imu_get_gyro_y(0);
+		est_att->gyro.z = imu_get_gyro_z(0);
 
-		est_att->acc.x = inertial_sensor_get_acc_x(0);
-		est_att->acc.y = inertial_sensor_get_acc_y(0);
-		est_att->acc.z = inertial_sensor_get_acc_z(0);
+		est_att->acc.x = imu_get_acc_x(0);
+		est_att->acc.y = imu_get_acc_y(0);
+		est_att->acc.z = imu_get_acc_z(0);
 
 		if (vector_length(est_att->acc) < 0.01f) {
 			LINK_DEBUG("WARNING: degenerate accel!");
@@ -106,9 +110,9 @@ void est_att_run(void)
 
     Vector euler = quaternion_to_euler(est_att->q);  
 
-    est_att->roll_rate = inertial_sensor_get_gyro_x(0) + est_att->gyro_bias.x;
-    est_att->pitch_rate = inertial_sensor_get_gyro_y(0) + est_att->gyro_bias.y;
-    est_att->yaw_rate = inertial_sensor_get_gyro_z(0) + est_att->gyro_bias.z;
+    est_att->roll_rate = imu_get_gyro_x(0) + est_att->gyro_bias.x;
+    est_att->pitch_rate = imu_get_gyro_y(0) + est_att->gyro_bias.y;
+    est_att->yaw_rate = imu_get_gyro_z(0) + est_att->gyro_bias.z;
 
     est_att->roll = euler.x;
     est_att->pitch = euler.y;

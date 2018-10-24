@@ -59,24 +59,22 @@ void log_write_att(uint16_t rate)
 		.yaw_rate_sp = 0.0f,
     };
     
-    if(timer_elapsed(&timer[LOG_ATT_MSG]) > 1*1000*1000/rate)
+    if(timer_check(&timer[LOG_ATT_MSG], 1*1000*1000/rate))
     {
-        timer[LOG_ATT_MSG] = timer_now();
         log_write(&pkt, sizeof(pkt));
     }
-    
 }
 
 void log_write_imu(uint16_t rate)
 {
     struct log_IMU_s pkt = {
     	LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-		.acc_x = inertial_sensor_get_acc_x(0),
-		.acc_y = inertial_sensor_get_acc_x(0),
-		.acc_z = inertial_sensor_get_acc_z(0),
-		.gyro_x = inertial_sensor_get_gyro_x(0),
-		.gyro_y = inertial_sensor_get_gyro_y(0),
-		.gyro_z = inertial_sensor_get_gyro_z(0),
+		.acc_x = imu_get_acc_x(0),
+		.acc_y = imu_get_acc_x(0),
+		.acc_z = imu_get_acc_z(0),
+		.gyro_x = imu_get_gyro_x(0),
+		.gyro_y = imu_get_gyro_y(0),
+		.gyro_z = imu_get_gyro_z(0),
 		.mag_x = compass_get_mag_x(0),
 		.mag_y = compass_get_mag_y(0),
 		.mag_z = compass_get_mag_z(0),
@@ -84,9 +82,8 @@ void log_write_imu(uint16_t rate)
 		.temp_gyro = 0.0f,
 		.temp_mag = 0.0f,
     };
-    if(timer_elapsed(&timer[LOG_IMU_MSG]) > 1*1000*1000/rate)
+    if(timer_check(&timer[LOG_IMU_MSG], 1*1000*1000/rate))
     {
-        timer[LOG_IMU_MSG] = timer_now();
         log_write(&pkt, sizeof(pkt));
     }
 }
@@ -99,9 +96,8 @@ void log_write_sens(uint16_t rate)
 		.baro_alt =  baro_get_altitude(0),
 		.baro_temp = baro_get_temp(0),
     };
-    if(timer_elapsed(&timer[LOG_SENS_MSG]) > 1*1000*1000/rate)
+    if(timer_check(&timer[LOG_SENS_MSG], 1*1000*1000/rate))
     {
-        timer[LOG_SENS_MSG] = timer_now();
         log_write(&pkt, sizeof(pkt));
     }
 }

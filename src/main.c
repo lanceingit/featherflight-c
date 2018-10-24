@@ -14,11 +14,11 @@
 #include "est.h"
 
 
-static times_t last_inertial_sensor_update_time = 0;
+static times_t last_imu_update_time = 0;
 static times_t last_compass_update_time = 0;
 static times_t last_baro_update_time = 0;
 static times_t last_heartbeat_update_time = 0;
-static times_t last_imu_update_time = 0;
+static times_t last_sen_update_time = 0;
 static times_t last_att_update_time = 0;
 //static times_t last_att_run_time = 0;
 
@@ -45,7 +45,7 @@ struct perf_s att_elapsed;
 
 int main() 
 {    
-    printf("hello feather flight\n");
+//    printf("hello feather flight\n");
 #ifdef F3_EVO    
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
     RCC_ClearFlag();
@@ -59,9 +59,14 @@ int main()
     // log_init();
      link_mavlink_init();
 
-    inertial_sensor_register(&mpu6050_linux.heir);
-//    compass_register(&hmc5883.heir);
+#ifdef F3_EVO    
+    imu_register(&mpu6050.heir);
+    baro_register(&ms5611.heir);
+    compass_register(&hmc5883.heir);
+#elif LINUX
+    imu_register(&mpu6050_linux.heir);
     baro_register(&spl06_linux.heir);
+#endif    
     sensor_init();
 
     gyro_cal();
@@ -128,60 +133,47 @@ void led_off(void)
 
 void linkSendTask(void)
 {
-    mavlink_message_t msg;
-    uint8_t system_id=2;
-    uint8_t component_id=1;    
-
-    if(timer_now() - last_heartbeat_update_time > 1000*1000)
+    if(timer_check(&last_heartbeat_update_time, 1000*1000))
     {
-        mavlink_msg_heartbeat_pack(system_id, component_id, &msg,
+        mavlink_msg_heartbeat_send(MAV_CH,
                                        MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_PX4, 
                                        0, 
                                        0, MAV_STATE_STANDBY);  
-
-        link_mavlink_msg_send(&msg);
-        last_heartbeat_update_time = timer_now();
     }
     
-    if(timer_now() - last_imu_update_time > 20*1000)
+    if(timer_check(&last_sen_update_time, 20*1000))
     {
-        mavlink_msg_highres_imu_pack(system_id, component_id, &msg,
+        mavlink_msg_highres_imu_send(MAV_CH,
                                timer_now(),
-                               inertial_sensor_get_acc_x(0), inertial_sensor_get_acc_y(0), inertial_sensor_get_acc_z(0),
-                               inertial_sensor_get_gyro_x(0),inertial_sensor_get_gyro_y(0),inertial_sensor_get_gyro_z(0),
+                               imu_get_acc_x(0), imu_get_acc_y(0), imu_get_acc_z(0),
+                               imu_get_gyro_x(0),imu_get_gyro_y(0),imu_get_gyro_z(0),
                                compass_get_mag_x(0), compass_get_mag_y(0), compass_get_mag_z(0),
                                baro_get_press(0), 0, baro_get_altitude(0), baro_get_temp(0),
                                0xFFFF);
-        link_mavlink_msg_send(&msg);
 
         Vector v;
-        inertial_sensor_get_acc(0, &v);
-        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+        imu_get_acc(0, &v);
+        mavlink_msg_named_value_float_send(MAV_CH,
                                timer_now(),
                                "acc_len",
                                vector_length(v));
-        link_mavlink_msg_send(&msg);
 
-        inertial_sensor_get_gyro(0, &v);
-        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+        imu_get_gyro(0, &v);
+        mavlink_msg_named_value_float_send(MAV_CH,
                                timer_now(),
                                "gyro_len",
                                vector_length(v));
-        link_mavlink_msg_send(&msg);
 
         // compass_get_mag(0, &v);
-        // mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+        // mavlink_msg_named_value_float_send(MAV_CH,
         //                        timer_now(),
         //                        "mag_len",
         //                        vector_length(v));
-        // link_mavlink_msg_send(&msg);
-
-        last_imu_update_time = timer_now();
     }
     
-    if(timer_now() - last_att_update_time > 50*1000)
+    if(timer_check(&last_att_update_time, 50*1000))
     {
-        mavlink_msg_attitude_pack(system_id, component_id, &msg,
+        mavlink_msg_attitude_send(MAV_CH,
                                timer_now(), 
                                att_get_roll(),
                                att_get_pitch(),
@@ -190,43 +182,36 @@ void linkSendTask(void)
                                att_get_pitch_rate(),
                                att_get_yaw_rate()
                                  );
-        link_mavlink_msg_send(&msg);
 
-
-       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+       mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
                               "bias_x",
                               att_est_q.heir.gyro_bias.x);
-       link_mavlink_msg_send(&msg);
-       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+
+       mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
                               "bias_y",
                               att_est_q.heir.gyro_bias.y);
-       link_mavlink_msg_send(&msg);
 
-//        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+//        mavlink_msg_named_value_float_send(MAV_CH,
 //                               timer_now(),
 //                               "corr_acc_x",
 //                               att_get_corr_acc_x());
-//        link_mavlink_msg_send(&msg);
-//        mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+
+//        mavlink_msg_named_value_float_send(MAV_CH,
 //                               timer_now(),
 //                               "corr_acc_y",
 //                               att_get_corr_acc_y());
-//        link_mavlink_msg_send(&msg);
 
-       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+       mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
                               "corr_all_x",
                               att_est_q.heir.corr.x);
-       link_mavlink_msg_send(&msg);
-       mavlink_msg_named_value_float_pack(system_id, component_id, &msg,
+
+       mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
                               "corr_all_y",
                               att_est_q.heir.corr.y);
-       link_mavlink_msg_send(&msg);
-
-        last_att_update_time = timer_now();
     }
 }
 
@@ -243,31 +228,28 @@ void linkRecvTask(void)
 
 void sensorTask(void)
 {        
-    if(timer_now() - last_inertial_sensor_update_time > 1000)
+    if(timer_check(&last_imu_update_time, 1000))
     {        
-        inertial_sensor_update(0);
-        last_inertial_sensor_update_time = timer_now();
+        imu_update(0);
+    }    
+    if(timer_check(&last_compass_update_time, (1000000 / 150)))
+    {        
+        compass_update(0);
     }
-    // if(timer_now() - last_compass_update_time > (1000000 / 150))
-    // {        
-    //     compass_update(0);
-    //     last_compass_update_time = timer_now();
-    // }
-    if(timer_now() - last_baro_update_time > 25000)
+    if(timer_check(&last_baro_update_time, 25000))
     {
         baro_update(0);
-        last_baro_update_time = timer_now();
     }
 }
 
 void attTask(void)
 {
-	if(inertial_sensor_is_update(0))
+	if(imu_is_update(0))
 	{
 		perf_begin(&att_elapsed);
 		est_att_run();
 		perf_end(&att_elapsed);
-		inertial_sensor_clean_update(0);
+		imu_clean_update(0);
 		perf_interval(&att_perf);
 	}
 }
@@ -282,23 +264,23 @@ void gyro_cal(void)         //TODO:put into sensor
 		Vector accel_end;
 		Vector accel_diff;
 
-		inertial_sensor_update(0);
-		inertial_sensor_get_acc(0,&accel_start);
+		imu_update(0);
+		imu_get_acc(0,&accel_start);
         gyro_sum = vector_set(0,0,0);
         for(uint8_t i=0; i<50; i++) {
-        	inertial_sensor_update(0);
-    		inertial_sensor_get_gyro(0,&gyro);
+        	imu_update(0);
+    		imu_get_gyro(0,&gyro);
             gyro_sum = vector_add(gyro_sum, gyro);
     		delay_ms(10);
         }
-        inertial_sensor_update(0);
-		inertial_sensor_get_acc(0,&accel_end);
+        imu_update(0);
+		imu_get_acc(0,&accel_end);
         accel_diff = vector_sub(accel_start, accel_end);
 		if(vector_length(accel_diff) >  0.2f) continue;
 
-		inertial_sensor_set_gyro_offset_x(0, gyro_sum.x/50);   
-		inertial_sensor_set_gyro_offset_y(0, gyro_sum.y/50);
-		inertial_sensor_set_gyro_offset_z(0, gyro_sum.z/50);
+		imu_set_gyro_offset_x(0, gyro_sum.x/50);   
+		imu_set_gyro_offset_y(0, gyro_sum.y/50);
+		imu_set_gyro_offset_z(0, gyro_sum.z/50);
         
         return;
 	}

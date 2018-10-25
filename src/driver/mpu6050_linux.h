@@ -11,7 +11,7 @@ typedef struct{
 
 struct mpu6050_linux_s
 {
-	struct inertial_sensor_s heir;
+	struct imu_s heir;
 	Vector gyro_raw;
     mpu6050_report_s report;   
     int fd; 

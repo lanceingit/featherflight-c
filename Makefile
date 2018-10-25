@@ -85,6 +85,7 @@ PROJ_OBJ += mpu6050_linux.o spl06_linux.o
 # module
 PROJ_OBJ += mavlink_log.o 
 PROJ_OBJ += log.o param.o sensor.o mtd.o param_api.o
+PROJ_OBJ += scheduler.o 
 
 #link
 PROJ_OBJ += link_mavlink.o 

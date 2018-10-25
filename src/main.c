@@ -12,6 +12,7 @@
 #include "perf.h"
 #include "vector.h"
 #include "est.h"
+#include "scheduler.h"
 
 
 static times_t last_imu_update_time = 0;
@@ -33,15 +34,22 @@ void linkRecvTask(void);
 void sensorTask(void);  
 void attTask(void);
 void logTask(void);
+void imuTask(void);
+void compassTask(void);
+void baroTask(void);
 
 void gyro_cal(void);
-
 
 
 struct perf_s main_perf;
 struct perf_s att_perf;
 struct perf_s att_elapsed;
 
+struct task_s link_task;
+struct task_s imu_task;
+struct task_s compass_task;
+struct task_s baro_task;
+struct task_s att_task;
 
 int main() 
 {    
@@ -78,6 +86,11 @@ int main()
     perf_init(&att_perf);
     perf_init(&att_elapsed);
 
+    task_create(&link_task, 10*1000, linkSendTask);
+    task_create(&imu_task, 1000, imuTask);
+    task_create(&compass_task, (10000000 / 150), compassTask);
+    task_create(&baro_task, 25000, baroTask);
+    task_create(&att_task, 1000, attTask);
 
     while(1)
     {
@@ -85,18 +98,17 @@ int main()
         led_on();
         led_off();      
     #endif        
-         linkSendTask();
+//         linkSendTask();
 //        mavlink_log_run();
 //        linkRecvTask();
-       sensorTask();
-       attTask();
+//       sensorTask();
+//       attTask();
 //        logTask();
 //        mtd_sync();
-        
-//        printf("pilot run..%lld\n", timer_now());
 
-//        delay(1);
-         perf_interval(&main_perf);
+        scheduler_run();
+
+        perf_interval(&main_perf);
         
     }
     
@@ -226,21 +238,21 @@ void linkRecvTask(void)
 	}
 }
 
-void sensorTask(void)
+void imuTask(void)
 {        
-    if(timer_check(&last_imu_update_time, 1000))
-    {        
-        imu_update(0);
-    }    
-    if(timer_check(&last_compass_update_time, (1000000 / 150)))
-    {        
-        compass_update(0);
-    }
-    if(timer_check(&last_baro_update_time, 25000))
-    {
-        baro_update(0);
-    }
+    imu_update(0);
+}    
+
+void compassTask(void)
+{
+    compass_update(0);
 }
+
+void baroTask(void)
+{
+    baro_update(0);
+}
+
 
 void attTask(void)
 {

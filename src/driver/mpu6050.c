@@ -123,31 +123,15 @@ struct mpu6050_s mpu6050 = {
 	.heir = {
 		.init = &mpu6050_init,
 		.update = &mpu6050_update,
+        .ready = false,
 	},
 };
 
 static struct mpu6050_s* this=&mpu6050;
 
-static bool mpu6050_config(void);
 
-bool mpu6050_init(enum Rotation r)
-{
-	lpf_init(&this->heir.acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lpf_init(&this->heir.acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lpf_init(&this->heir.acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-	lpf_init(&this->heir.gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	lpf_init(&this->heir.gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	lpf_init(&this->heir.gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-	this->heir.ready = false;
-	this->heir.rotation = r;
-	this->heir.is_update = false;
-	
-	return mpu6050_config();
-}
-
-
-bool mpu6050_config(void)
-{
+bool mpu6050_init(void)
+{	
     int8_t ret;
     uint8_t sig;
     
@@ -184,55 +168,24 @@ bool mpu6050_config(void)
 //            0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
 //    
 //    
-    this->heir.ready = true;
     
     return true;
 }
 
-void mpu6050_update(void)
+void mpu6050_update(Vector* acc, Vector* gyro)
 {
     if (i2c_read(this->i2c, MPU6050_ADDRESS, MPU_RA_ACCEL_XOUT_H, 14, this->buf) < 0) {
         return;
     }
 
-    Vector acc_new = {
-        (float)((int16_t)((this->buf[0] << 8) | this->buf[1]))*(9.80665f /2048),
-        (float)((int16_t)((this->buf[2] << 8) | this->buf[3]))*(9.80665f /2048),
-        (float)((int16_t)((this->buf[4] << 8) | this->buf[5]))*(9.80665f /2048),
-    };
-
-    rotate_3f(this->heir.rotation, &acc_new.x, &acc_new.y, &acc_new.z);
-
-    this->heir.acc.x = lpf_apply(&this->heir.acc_filter_x, acc_new.x);
-    this->heir.acc.y = lpf_apply(&this->heir.acc_filter_y, acc_new.y);
-    this->heir.acc.z = lpf_apply(&this->heir.acc_filter_z, acc_new.z);
+    acc->x = (float)((int16_t)((this->buf[0] << 8) | this->buf[1]))*(9.80665f /2048),
+    acc->y = (float)((int16_t)((this->buf[2] << 8) | this->buf[3]))*(9.80665f /2048),
+    acc->z = (float)((int16_t)((this->buf[4] << 8) | this->buf[5]))*(9.80665f /2048),
     
-    Vector gyro_new = {
-        (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4),
-        (float)((int16_t)((this->buf[10] << 8) | this->buf[11]))*(0.0174532 / 16.4),
-        (float)((int16_t)((this->buf[12] << 8) | this->buf[13]))*(0.0174532 / 16.4),  
-    };
-    rotate_3f(this->heir.rotation, &gyro_new.x, &gyro_new.y, &gyro_new.z);
-
-    this->gyro_raw = gyro_new;
+    gyro->x = (float)((int16_t)((this->buf[8] << 8) | this->buf[9]))*(0.0174532 / 16.4),
+    gyro->y = (float)((int16_t)((this->buf[10] << 8) | this->buf[11]))*(0.0174532 / 16.4),
+    gyro->z = (float)((int16_t)((this->buf[12] << 8) | this->buf[13]))*(0.0174532 / 16.4),  
     
-    gyro_new = vector_sub(gyro_new, this->heir.gyro_offset);
-    
-	this->heir.gyro.x = lpf_apply(&this->heir.gyro_filter_x, gyro_new.x);
-	this->heir.gyro.y = lpf_apply(&this->heir.gyro_filter_y, gyro_new.y);
-	this->heir.gyro.z = lpf_apply(&this->heir.gyro_filter_z, gyro_new.z);
-
-	this->heir.is_update = true;
+    this->gyro_raw = gyro_new;    
 }
-
-bool mpu6050_is_update()
-{
-	return this->heir.is_update;
-}
-
-void mpu6050_clean_update()
-{
-	this->heir.is_update = false;
-}
-
 

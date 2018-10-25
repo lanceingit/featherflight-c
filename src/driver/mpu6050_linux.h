@@ -19,7 +19,7 @@ struct mpu6050_linux_s
 
 extern struct mpu6050_linux_s mpu6050_linux;
 
-bool mpu6050_linux_init(enum Rotation r);
-void mpu6050_linux_update(void);
+bool mpu6050_linux_init(void);
+void mpu6050_linux_update(Vector* acc, Vector* gyro);
 
 

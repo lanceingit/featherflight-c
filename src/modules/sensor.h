@@ -27,8 +27,8 @@ struct imu_s
     enum Rotation rotation;
 
     //method
-    init_func_rocation* init;
-    update_func* update;
+    init_func* init;
+    imu_update_func* update;
 };
 
 struct compass_s

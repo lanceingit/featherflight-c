@@ -15,16 +15,6 @@
 #include "scheduler.h"
 
 
-static times_t last_imu_update_time = 0;
-static times_t last_compass_update_time = 0;
-static times_t last_baro_update_time = 0;
-static times_t last_heartbeat_update_time = 0;
-static times_t last_sen_update_time = 0;
-static times_t last_att_update_time = 0;
-//static times_t last_att_run_time = 0;
-
-
-
 static void led_init(void);
 void led_on(void);
 void led_off(void);
@@ -98,13 +88,6 @@ int main()
         led_on();
         led_off();      
     #endif        
-//         linkSendTask();
-//        mavlink_log_run();
-//        linkRecvTask();
-//       sensorTask();
-//       attTask();
-//        logTask();
-//        mtd_sync();
 
         scheduler_run();
 
@@ -145,86 +128,7 @@ void led_off(void)
 
 void linkSendTask(void)
 {
-    if(timer_check(&last_heartbeat_update_time, 1000*1000))
-    {
-        mavlink_msg_heartbeat_send(MAV_CH,
-                                       MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_PX4, 
-                                       0, 
-                                       0, MAV_STATE_STANDBY);  
-    }
-    
-    if(timer_check(&last_sen_update_time, 20*1000))
-    {
-        mavlink_msg_highres_imu_send(MAV_CH,
-                               timer_now(),
-                               imu_get_acc_x(0), imu_get_acc_y(0), imu_get_acc_z(0),
-                               imu_get_gyro_x(0),imu_get_gyro_y(0),imu_get_gyro_z(0),
-                               compass_get_mag_x(0), compass_get_mag_y(0), compass_get_mag_z(0),
-                               baro_get_press(0), 0, baro_get_altitude(0), baro_get_temp(0),
-                               0xFFFF);
-
-        Vector v;
-        imu_get_acc(0, &v);
-        mavlink_msg_named_value_float_send(MAV_CH,
-                               timer_now(),
-                               "acc_len",
-                               vector_length(v));
-
-        imu_get_gyro(0, &v);
-        mavlink_msg_named_value_float_send(MAV_CH,
-                               timer_now(),
-                               "gyro_len",
-                               vector_length(v));
-
-        // compass_get_mag(0, &v);
-        // mavlink_msg_named_value_float_send(MAV_CH,
-        //                        timer_now(),
-        //                        "mag_len",
-        //                        vector_length(v));
-    }
-    
-    if(timer_check(&last_att_update_time, 50*1000))
-    {
-        mavlink_msg_attitude_send(MAV_CH,
-                               timer_now(), 
-                               att_get_roll(),
-                               att_get_pitch(),
-                               att_get_yaw(),
-                               att_get_roll_rate(),
-                               att_get_pitch_rate(),
-                               att_get_yaw_rate()
-                                 );
-
-       mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "bias_x",
-                              att_est_q.heir.gyro_bias.x);
-
-       mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "bias_y",
-                              att_est_q.heir.gyro_bias.y);
-
-//        mavlink_msg_named_value_float_send(MAV_CH,
-//                               timer_now(),
-//                               "corr_acc_x",
-//                               att_get_corr_acc_x());
-
-//        mavlink_msg_named_value_float_send(MAV_CH,
-//                               timer_now(),
-//                               "corr_acc_y",
-//                               att_get_corr_acc_y());
-
-       mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "corr_all_x",
-                              att_est_q.heir.corr.x);
-
-       mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "corr_all_y",
-                              att_est_q.heir.corr.y);
-    }
+    link_mavlink_stream();
 }
 
 
@@ -256,8 +160,7 @@ void baroTask(void)
 
 void attTask(void)
 {
-	if(imu_is_update(0))
-	{
+	if(imu_is_update(0)) {
 		perf_begin(&att_elapsed);
 		est_att_run();
 		perf_end(&att_elapsed);
@@ -268,8 +171,7 @@ void attTask(void)
 
 void gyro_cal(void)         //TODO:put into sensor
 {
-	while(1)
-	{
+	while(1) {
 		Vector gyro;
 		Vector gyro_sum;
 		Vector accel_start;

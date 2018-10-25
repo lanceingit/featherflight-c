@@ -2,6 +2,7 @@
 
 #include "sensor.h"
 #include "vector.h"
+#include "timer.h"
 
 #define INS_MAX		3
 
@@ -14,6 +15,66 @@ static uint8_t compass_cnt=0;
 static struct baro_s* baro[INS_MAX];
 static uint8_t baro_cnt=0;
 
+void sensor_gyro_cal(void)         
+{
+#define GYRO_CAL_STATUS_COLLECT  	0
+#define GYRO_CAL_STATUS_CHECK_MOVE  1
+#define GYRO_CAL_STATUS_CAL  		2
+#define GYRO_CAL_STATUS_IDEL  		3
+
+#define COLLECT_MAX  50
+
+	static uint8_t status = GYRO_CAL_STATUS_COLLECT;
+	static uint8_t collect_cnt=0;
+
+	Vector gyro;
+	Vector gyro_sum;
+	static Vector accel_start;
+	Vector accel_end;
+	Vector accel_diff;
+
+	if(status == GYRO_CAL_STATUS_COLLECT) {
+		// if(!armed) {
+			// if(timer_check(cal_time, 50*1000)) {
+				imu_get_acc(0, &accel_start);
+				gyro_sum = vector_set(0,0,0);
+				
+				if(collect_cnt < COLLECT_MAX) {
+					imu_get_gyro(0,&gyro);
+					gyro_sum = vector_add(gyro_sum, gyro);
+					collect_cnt++;
+					//delay_ms(10);
+				} else {
+					status = GYRO_CAL_STATUS_CHECK_MOVE;
+				}		
+			// }
+		// } else {
+		// 	status = GYRO_CAL_STATUS_IDEL;
+		// }
+	} else if(status == GYRO_CAL_STATUS_CHECK_MOVE) {
+		imu_get_acc(0,&accel_end);
+		accel_diff = vector_sub(accel_start, accel_end);
+		if(vector_length(accel_diff) >  0.2f) {
+			status = GYRO_CAL_STATUS_COLLECT;
+		} else {
+			status = GYRO_CAL_STATUS_CAL;
+		}	
+	} else if(status == GYRO_CAL_STATUS_CAL) {
+		imu_set_gyro_offset_x(0, gyro_sum.x/50);   
+		imu_set_gyro_offset_y(0, gyro_sum.y/50);
+		imu_set_gyro_offset_z(0, gyro_sum.z/50);
+		status = GYRO_CAL_STATUS_IDEL;
+	} else if(status == GYRO_CAL_STATUS_IDEL) {
+		// if() {
+		// 	status = GYRO_CAL_STATUS_COLLECT;
+		// }
+	}
+
+
+	
+
+}
+
 void imu_register(struct imu_s* item)
 {
 	if(imu_cnt >= INS_MAX) return;
@@ -22,8 +83,25 @@ void imu_register(struct imu_s* item)
 
 void imu_update(uint8_t ins)
 {
+	Vector acc; 
+	Vector gyro;
+
 	if(ins > imu_cnt) return;
-	imu[ins]->update();
+	imu[ins]->update(&acc, &gyro);
+
+    rotate_3f(imu[ins]->rotation, &acc.x, &acc.y, &acc.z);
+    imu[ins]->acc.x = lpf_apply(&imu[ins]->acc_filter_x, acc.x);
+    imu[ins]->acc.y = lpf_apply(&imu[ins]->acc_filter_y, acc.y);
+    imu[ins]->acc.z = lpf_apply(&imu[ins]->acc_filter_z, acc.z);
+
+    rotate_3f(imu[ins]->rotation, &gyro.x, &gyro.y, &gyro.z);
+    gyro = vector_sub(gyro, imu[ins]->gyro_offset);
+
+	imu[ins]->gyro.x = lpf_apply(&imu[ins]->gyro_filter_x, gyro.x);
+	imu[ins]->gyro.y = lpf_apply(&imu[ins]->gyro_filter_y, gyro.y);
+	imu[ins]->gyro.z = lpf_apply(&imu[ins]->gyro_filter_z, gyro.z);
+
+	imu[ins]->is_update = true;
 }
 
 void imu_get_acc(uint8_t ins, Vector* acc)
@@ -192,7 +270,19 @@ void sensor_init(void)
 {
 	uint8_t i;
 	for(i=0; i<imu_cnt; i++) {
-		imu[i]->init(INERTIAL_SENSOR_ROTATION);   //TODO:
+		lpf_init(&imu[i]->acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+		lpf_init(&imu[i]->acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+		lpf_init(&imu[i]->acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
+		lpf_init(&imu[i]->gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+		lpf_init(&imu[i]->gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+		lpf_init(&imu[i]->gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+
+		imu[i]->rotation = INERTIAL_SENSOR_ROTATION;
+		imu[i]->is_update = false;
+
+		if(imu[i]->init()) {
+			imu[i]->ready = true;   
+		} 
 	}
 	for(i=0; i<compass_cnt; i++) {
 		compass[i]->init();

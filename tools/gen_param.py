@@ -162,21 +162,24 @@ param = json.load(j)
 #print param
 
 #print len(param)
-  
-f = open(os.path.join(path+"/src/param", "param_api.c"), mode='r')
-  
-lines = f.readlines()
-line=5
-param_change=False
-for i in range(len(param)):    
-    param_group = param.keys()[i]
-    for param_name in param[param_group]:    
-        if(lines[line].find(param_name) != -1):
-            line += 1
-        else:    
-            param_change=True
-            break
-    line += 1
+
+try:  
+    f = open(os.path.join(path+"/src/param", "param_api.c"), mode='r')
+    lines = f.readlines()
+    line=5
+    param_change=False
+    for i in range(len(param)):    
+        param_group = param.keys()[i]
+        for param_name in param[param_group]:    
+            if(lines[line].find(param_name) != -1):
+                line += 1
+            else:    
+                param_change=True
+                break
+        line += 1
+except:
+    param_change=True    
+
 
 param_change=True    
 if param_change==True:  

@@ -18,6 +18,7 @@ extern mavlink_system_t mavlink_system;
 void link_mavlink_init(void);
 void link_mavlink_msg_send(mavlink_message_t* msg);
 bool link_mavlink_recv(mavlink_message_t* msg);
+void link_mavlink_stream(void);
 void mavlink_send(mavlink_channel_t chan, const uint8_t *ch, uint16_t length);
 
 #include "mavlink.h"

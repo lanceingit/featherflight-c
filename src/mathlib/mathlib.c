@@ -1,3 +1,4 @@
+#include "board.h"
 #include "mathlib.h"
 #include <math.h>
 
@@ -52,3 +53,54 @@ float press2alt(float p)
 {
 	return 44330 * (1 - powf(((float)p / (float)1013.25),(1/5.255)));  //FIXME:
 }
+
+
+
+void variance_collect(struct variance_s* v, float val)
+{
+	v->cnt++;
+	v->sum += val;
+    v->sum_x2 += POW2(val);	
+}
+
+float variance_cal(struct variance_s* v)
+{
+	float s2;
+	float s3;
+	float avg;
+
+	avg = v->sum / v->cnt;
+	s2 = 2 * avg * v->sum;
+    s3 = v->cnt * POW2(avg);
+    return (v->sum_x2 - s2 + s3)/v->cnt; 
+}
+
+struct variance_s
+{
+	float sum;
+	uint8_t size;
+	struct fifo_s fifo;
+	uint8_t data[100];
+};
+
+float variance_create(struct variance_s* v, uint8_t size)
+{
+	v->size = size;
+	for(uint8_t i=0; i<v->size; i++) {
+		v->data[i] = 0.0f;
+	}
+	fifo_create(&v->data, v->data, v->size);
+}
+
+float variance_cal(struct variance_s* v, float val)
+{
+	// float 
+
+	// if(fifo_get_count(v) < v->size) {
+	// 	v->sum += val;
+	// } else {
+	// 	fifo_read();
+	// 	v->sum = v->sum - 
+	// }
+}
+

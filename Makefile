@@ -91,7 +91,7 @@ PROJ_OBJ += scheduler.o
 PROJ_OBJ += link_mavlink.o 
 
 #pilot
-PROJ_OBJ += att_est_q.o att_est_cf.o est.o mixer.o commander.o
+PROJ_OBJ += att_est_q.o att_est_cf.o est.o mixer.o commander.o att_control.o
 
 #mathlib
 PROJ_OBJ += mathlib.o matrix.o vector.o quaternion.o dcm.o srcdkf.o

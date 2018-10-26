@@ -4,8 +4,7 @@
 
 void stabilize_update(float dt)
 {
-    att_set_roll_target(commander_get_roll());
-    att_set_pitch_target(commander_get_pitch());
-    att_set_yaw_target(commander_get_yaw());
+    att_control_roll_pitch_update(dt, commander_get_roll(), commander_get_pitch(), 1.0f);
+    att_control_yaw_rate_update(dt, commander_get_yaw_rate());
     mixer_set_thrust(commander_get_thrust());
 }

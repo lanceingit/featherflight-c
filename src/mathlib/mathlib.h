@@ -1,5 +1,7 @@
 #pragma once
 
+#include "fifo.h"
+
 #ifndef M_PI
 #define M_PI			3.14159265
 #endif
@@ -16,7 +18,16 @@
 
 #define CONSTANTS_ONE_G     9.80665f;						// m/s^2
 
+struct variance_s
+{
+	float sum_x2;
+	float sum;
+	uint8_t cnt;
+};
+
 float inv_sqrt(float x);
 float constrain(float val, float min_val, float max_val);
 float wrap_pi(float bearing);
 float press2alt(float p);
+void variance_collect(struct variance_s* v, float val);
+float variance_cal(struct variance_s* v);

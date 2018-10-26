@@ -14,36 +14,6 @@ struct pid_s rate_pid_roll;
 struct pid_s rate_pid_pitch;
 struct pid_s rate_pid_yaw;
 
-static float att_roll_target;
-static float att_pitch_target;
-static float att_yaw_target;
-static float rate_roll_limit;
-static float rate_pitch_limit;
-
-void att_set_roll_target(float t)
-{
-    att_roll_target = t;
-}
-
-void att_set_pitch_target(float t)
-{
-    att_pitch_target = t;
-}
-
-void att_set_yaw_target(float t)
-{
-    att_yaw_target = t;
-}
-
-void att_set_rate_roll_limit(float l)
-{
-    rate_roll_limit = l;
-}
-
-void att_set_rate_pitch_limit(float l)
-{
-    rate_pitch_limit = l;
-}
 
 void att_control_init(void)
 {
@@ -72,30 +42,50 @@ void att_control_init(void)
                                 PARAM_GET(ATTC_RATE_YAW_D_WEIGHT));                                                                
 }
 
-void att_control_update(float dt)
+void att_control_roll_pitch_rate_update(float dt, float roll_rate_target, float pitch_rate_target, float limit)
 {
 	float rate_taret_roll;
 	float rate_taret_pitch;
-	float rate_taret_yaw;
 	float roll_output;
-	float pitch_output;    
-	float yaw_output;    
+	float pitch_output;  
 
-	att_roll_target = constrain(att_roll_target, -PARAM_GET(ATTC_RP_LIMIT), PARAM_GET(ATTC_RP_LIMIT));
-	att_pitch_target = constrain(att_pitch_target, -PARAM_GET(ATTC_RP_LIMIT), PARAM_GET(ATTC_RP_LIMIT));
-
-    rate_taret_roll  = pid_update(&att_pid_roll, att_roll_target-att_get_roll(), dt);
-    rate_taret_pitch = pid_update(&att_pid_pitch, att_pitch_target-att_get_pitch(), dt);
-    rate_taret_yaw   = pid_update(&att_pid_yaw, att_yaw_target-att_get_yaw(), dt);
-
-	rate_taret_roll = constrain(rate_taret_roll, -rate_roll_limit, rate_roll_limit);
-	rate_taret_pitch = constrain(rate_taret_pitch, -rate_pitch_limit, rate_pitch_limit);
+	rate_taret_roll = constrain(rate_taret_roll, -limit, limit);
+	rate_taret_pitch = constrain(rate_taret_pitch, -limit, limit);
 
 	roll_output = pid_update(&rate_pid_roll, rate_taret_roll-att_get_roll_rate(), dt);
 	pitch_output = pid_update(&rate_pid_pitch, rate_taret_pitch-att_get_pitch_rate(), dt);
-	yaw_output = pid_update(&rate_pid_yaw, rate_taret_yaw-att_get_yaw_rate(), dt);
 
 	mixer_set_roll(roll_output);
-	mixer_set_pitch(pitch_output);    
-	mixer_set_yaw(yaw_output);    
+	mixer_set_pitch(pitch_output);       
 }
+
+void att_control_roll_pitch_update(float dt, float roll_target, float pitch_target, float limit)
+{
+	float rate_taret_roll;
+	float rate_taret_pitch;    
+
+	roll_target = constrain(roll_target, -PARAM_GET(ATTC_RP_LIMIT), PARAM_GET(ATTC_RP_LIMIT));
+	pitch_target = constrain(pitch_target, -PARAM_GET(ATTC_RP_LIMIT), PARAM_GET(ATTC_RP_LIMIT));
+
+    rate_taret_roll  = pid_update(&att_pid_roll, roll_target-att_get_roll(), dt);
+    rate_taret_pitch = pid_update(&att_pid_pitch, pitch_target-att_get_pitch(), dt);
+
+    att_control_roll_pitch_rate_update(dt, rate_taret_roll, rate_taret_pitch, limit);
+}
+
+void att_control_yaw_rate_update(float dt, float yaw_rate_target)
+{
+    float yaw_output;  
+
+    yaw_output = pid_update(&rate_pid_yaw, yaw_rate_target-att_get_yaw_rate(), dt);
+    mixer_set_yaw(yaw_output);  
+}
+
+void att_control_yaw_update(float dt, float yaw_target)
+{
+	float rate_taret_yaw;
+
+    rate_taret_yaw   = pid_update(&att_pid_yaw, yaw_target-att_get_yaw(), dt);
+    att_control_yaw_rate_update(dt, rate_taret_yaw);
+}
+

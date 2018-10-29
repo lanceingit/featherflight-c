@@ -3,12 +3,7 @@
 #include "est.h"
 #include "timer.h"
 #include "sensor.h"
-
-#ifdef LINUX
-#define LINK_DEBUG printf
-#else
-#define LINK_DEBUG(avg, ...)
-#endif
+#include "debug.h"
 
 static struct att_est_s* est_att;
 
@@ -79,7 +74,7 @@ void est_att_run(void)
 		est_att->acc.z = imu_get_acc_z(0);
 
 		if (vector_length(est_att->acc) < 0.01f) {
-			LINK_DEBUG("WARNING: degenerate accel!");
+			PRINT("WARNING: degenerate accel!\n");
 			return;
 		}
 	} else {
@@ -90,7 +85,7 @@ void est_att_run(void)
         compass_get_mag(0, &est_att->mag);
 
 		if (vector_length(est_att->mag) < 0.01f) {
-			LINK_DEBUG("WARNING: degenerate mag!");
+			PRINT("WARNING: degenerate mag!\n");
 			return;
 		}
     }

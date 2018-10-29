@@ -1,5 +1,6 @@
 #include "board.h"
 #include "scheduler.h"
+#include "debug.h"
 
 #define TASK_MAX     20
 
@@ -32,12 +33,12 @@ void scheduler_run(void)
 {
     for(uint8_t i=0; i<task_cnt; i++) {
         if(task_tab[i]->run) {
-//            printf("task:%d ",i);
+//            PRINT("task:%d ",i);
             if(timer_check(&task_tab[i]->last_run, task_tab[i]->rate)) {
                 task_tab[i]->callback();
-                // printf("run \n");
+                // PRINT("run \n");
             } else {
-                // printf("wait \n");
+                // PRINT("wait \n");
             }        
         }
     }

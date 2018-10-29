@@ -43,7 +43,6 @@
 #define DISABLE_M25P16 GPIO_SetBits(GPIOB, GPIO_Pin_12);
 #define ENABLE_M25P16  GPIO_ResetBits(GPIOB, GPIO_Pin_12);
 
-static struct flashGeometry_s geometry;
 static bool couldBeBusy=false;
 
 static int8_t spi_flash_performOneByteCommand(uint8_t command);

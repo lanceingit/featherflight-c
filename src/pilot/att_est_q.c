@@ -12,12 +12,8 @@
 #include "param.h"
 
 #include "att_param.h"
+#include "debug.h"
 
-#ifdef LINUX
-#define LINK_DEBUG printf
-#else
-#define LINK_DEBUG(avg, ...)
-#endif
 
 struct att_est_q_s att_est_q = {
 	.heir = {
@@ -33,21 +29,21 @@ static struct att_est_q_s* this=&att_est_q;
 
 bool att_est_q_init(void)
 { 
-	LINK_DEBUG("att q init \n");
+	PRINT("att q init \n");
     PARAM_REGISTER(att)
-	lpf_init(&this->acc_filter_x, 625.0f, 30.0f);
-	lpf_init(&this->acc_filter_y, 625.0f, 30.0f);
-	lpf_init(&this->acc_filter_z, 625.0f, 30.0f);
-	lpf_init(&this->gyro_filter_x, 625.0f, 30.0f);
-	lpf_init(&this->gyro_filter_y, 625.0f, 30.0f);
-	lpf_init(&this->gyro_filter_z, 625.0f, 30.0f);
+	lpf2p_init(&this->acc_filter_x, 625.0f, 30.0f);
+	lpf2p_init(&this->acc_filter_y, 625.0f, 30.0f);
+	lpf2p_init(&this->acc_filter_z, 625.0f, 30.0f);
+	lpf2p_init(&this->gyro_filter_x, 625.0f, 30.0f);
+	lpf2p_init(&this->gyro_filter_y, 625.0f, 30.0f);
+	lpf2p_init(&this->gyro_filter_z, 625.0f, 30.0f);
     this->mag_decl_auto = true;
     this->mag_decl = 0.0f;
 	this->bias_max = PARAM_GET(ATT_BIAS_MAX);//10.05f;
 	this->w_accel = PARAM_GET(ATT_W_ACCEL);//0.2f;
 	this->w_mag = PARAM_GET(ATT_W_MAG);//0.1f;
 	this->w_gyro_bias = PARAM_GET(ATT_W_GYRO_BIAS;);//0.1f;
-	LINK_DEBUG("w_gyro_bias=%f\n", this->w_gyro_bias);
+	PRINT("w_gyro_bias=%f\n", (double)this->w_gyro_bias);
     
     
     imu_get_acc(0, &this->heir.acc);
@@ -55,7 +51,7 @@ bool att_est_q_init(void)
 	Vector k = vector_normalized(vector_reverse(this->heir.acc));
 
 	if (vector_length(this->heir.acc) < 0.01f || vector_length(this->heir.acc) > 12) {
-		LINK_DEBUG("init: degenerate accel!");
+		PRINT("init: degenerate accel!\n");
 	}
 
 	// 'i' is Earth X axis (North) unit vector in body frame, orthogonal with 'k'
@@ -65,9 +61,9 @@ bool att_est_q_init(void)
     {
         imu_get_acc(0, &this->heir.mag);
         //esprintf(buf, "mag0:%.3f 1:%.3f 2:%.3f", (double)_mag(0),(double)_mag(1),(double)_mag(2));
-        //LINK_DEBUG(buf);
+        //PRINT(buf);
         if (vector_length(this->heir.mag) < 0.01f) {
-            LINK_DEBUG("init: degenerate mag!");
+            PRINT("init: degenerate mag!\n");
         }
         
         i = vector_normalized(vector_sub(this->heir.mag, vector_mul(k, vector_scalar(this->heir.mag, k))));
@@ -102,7 +98,7 @@ bool att_est_q_init(void)
 		this->heir.inited = true;
 	} else {
 		this->heir.inited = false;
-		LINK_DEBUG("q init definite");
+		PRINT("q init definite\n");
 	}
 
 	return this->heir.inited;
@@ -114,12 +110,12 @@ bool att_est_q_run(float dt)
 		return att_est_q_init();
 	}
 
-	this->heir.acc.x = lpf_apply(&this->acc_filter_x, this->heir.acc.x);
-	this->heir.acc.y = lpf_apply(&this->acc_filter_y, this->heir.acc.y);
-	this->heir.acc.z = lpf_apply(&this->acc_filter_z, this->heir.acc.z);
-	this->heir.gyro.x = lpf_apply(&this->gyro_filter_x, this->heir.gyro.x);
-	this->heir.gyro.y = lpf_apply(&this->gyro_filter_y, this->heir.gyro.y);
-	this->heir.gyro.z = lpf_apply(&this->gyro_filter_z, this->heir.gyro.z);
+	this->heir.acc.x = lpf2p_apply(&this->acc_filter_x, this->heir.acc.x);
+	this->heir.acc.y = lpf2p_apply(&this->acc_filter_y, this->heir.acc.y);
+	this->heir.acc.z = lpf2p_apply(&this->acc_filter_z, this->heir.acc.z);
+	this->heir.gyro.x = lpf2p_apply(&this->gyro_filter_x, this->heir.gyro.x);
+	this->heir.gyro.y = lpf2p_apply(&this->gyro_filter_y, this->heir.gyro.y);
+	this->heir.gyro.z = lpf2p_apply(&this->gyro_filter_z, this->heir.gyro.z);
 
 
 	Quaternion q_last = this->heir.q;
@@ -176,7 +172,7 @@ bool att_est_q_run(float dt)
 		this->heir.q = q_last;
 		this->rate = vector_set(0,0,0);
         this->heir.gyro_bias = vector_set(0,0,0);
-		LINK_DEBUG("q definite");
+		PRINT("q definite\n");
 		return false;
 	}
 

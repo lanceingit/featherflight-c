@@ -17,12 +17,12 @@ struct att_est_q_s
 
     Vector rate;
 
-	struct lpf_s	acc_filter_x;
-	struct lpf_s	acc_filter_y;
-	struct lpf_s	acc_filter_z;
-	struct lpf_s	gyro_filter_x;
-	struct lpf_s	gyro_filter_y;
-	struct lpf_s	gyro_filter_z;
+	struct lpf2p_s	acc_filter_x;
+	struct lpf2p_s	acc_filter_y;
+	struct lpf2p_s	acc_filter_z;
+	struct lpf2p_s	gyro_filter_x;
+	struct lpf2p_s	gyro_filter_y;
+	struct lpf2p_s	gyro_filter_z;
 };
 
 extern struct att_est_q_s att_est_q;

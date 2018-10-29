@@ -51,9 +51,8 @@ static void handle_log_request_list(mavlink_message_t* msg)
     uint8_t system_id=2;
     uint8_t component_id=1;
 
-    mavlink_msg_log_entry_pack(system_id, component_id, &msg_send,
+    mavlink_msg_log_entry_send(MAV_CH,
     						     0, 1, 1, 0, log_get_size());
-   link_mavlink_msg_send(&msg_send);
 }
 
 static void handle_log_request_data(mavlink_message_t* msg)
@@ -76,8 +75,7 @@ static void handle_log_request_data(mavlink_message_t* msg)
 		memset(log_data.data, 0, MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN);
 		log_data.count = log_read(log_data.ofs, log_data.data, last_data > MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN ? MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN : last_data);
 		log_data.id = 0;
-		mavlink_msg_log_data_encode(system_id, component_id, &msg_send, &log_data);
-		link_mavlink_msg_send(&msg_send);
+        mavlink_msg_log_data_send_struct(MAV_CH, &log_data);
 
 		log_data.ofs += log_data.count;
 		last_data =	log_get_size() - log_data.ofs;
@@ -103,8 +101,7 @@ void mavlink_log_run(void)
             memset(log_data.data, 0, MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN);
             log_data.count = log_read(log_data.ofs, log_data.data, last_data > MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN ? MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN : last_data);
             log_data.id = 0;
-            mavlink_msg_log_data_encode(system_id, component_id, &msg_send, &log_data);
-            link_mavlink_msg_send(&msg_send);
+            mavlink_msg_log_data_send_struct(MAV_CH, &log_data);
 
             log_data.ofs += log_data.count;
             last_data =	log_get_size() - log_data.ofs;

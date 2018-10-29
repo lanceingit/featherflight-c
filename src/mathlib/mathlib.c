@@ -54,53 +54,72 @@ float press2alt(float p)
 	return 44330 * (1 - powf(((float)p / (float)1013.25),(1/5.255)));  //FIXME:
 }
 
+// struct variance_s
+// {
+// 	float sum_x2;
+// 	float sum;
+// 	uint8_t cnt;
+// };
+
+// void variance_collect(struct variance_s* v, float val)
+// {
+// 	v->cnt++;
+// 	v->sum += val;
+//     v->sum_x2 += POW2(val);	
+// }
+
+// float variance_cal(struct variance_s* v)
+// {
+// 	float s2;
+// 	float s3;
+// 	float avg;
+
+// 	avg = v->sum / v->cnt;
+// 	s2 = 2 * avg * v->sum;
+//     s3 = v->cnt * POW2(avg);
+//     return (v->sum_x2 - s2 + s3)/v->cnt; 
+// }
 
 
-void variance_collect(struct variance_s* v, float val)
-{
-	v->cnt++;
-	v->sum += val;
-    v->sum_x2 += POW2(val);	
-}
 
-float variance_cal(struct variance_s* v)
-{
-	float s2;
-	float s3;
-	float avg;
-
-	avg = v->sum / v->cnt;
-	s2 = 2 * avg * v->sum;
-    s3 = v->cnt * POW2(avg);
-    return (v->sum_x2 - s2 + s3)/v->cnt; 
-}
-
-struct variance_s
-{
-	float sum;
-	uint8_t size;
-	struct fifo_s fifo;
-	uint8_t data[100];
-};
-
-float variance_create(struct variance_s* v, uint8_t size)
+void variance_create(struct variance_s* v, uint8_t size)
 {
 	v->size = size;
 	for(uint8_t i=0; i<v->size; i++) {
 		v->data[i] = 0.0f;
+		v->data_sq[i] = 0.0f;
 	}
-	fifo_create(&v->data, v->data, v->size);
+	fifo_f_create(&v->fifo, v->data, v->size);
+	fifo_f_create(&v->fifo_sq, v->data_sq, v->size);
 }
 
 float variance_cal(struct variance_s* v, float val)
 {
-	// float 
+	float tmp;
+	float avg;
+	float sq;
+	float s2;
+	float s3;
+	float variance = 0.0f;
 
-	// if(fifo_get_count(v) < v->size) {
-	// 	v->sum += val;
-	// } else {
-	// 	fifo_read();
-	// 	v->sum = v->sum - 
-	// }
+	sq = POW2(val);
+	if(fifo_f_get_count(&v->fifo) < v->size-1) {
+		v->sum += val;
+		v->sum_sq += sq;
+	} else {
+		fifo_f_read(&v->fifo, &tmp);
+		v->sum = v->sum - tmp + val;
+		avg = v->sum / v->size;
+
+		fifo_f_read(&v->fifo_sq, &tmp);
+		v->sum_sq = v->sum_sq - tmp + sq;
+		s2 = 2 * avg * v->sum;
+		s3 = v->size * POW2(avg);
+		variance = (v->sum_sq - s2 + s3)/v->size; 
+	}
+	fifo_f_write_force(&v->fifo, val);
+	fifo_f_write_force(&v->fifo_sq, sq);
+
+	return variance;
 }
 

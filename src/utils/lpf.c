@@ -2,7 +2,7 @@
 #include "mathlib.h"
 #include "lpf.h"
 
-void lpf_init(struct lpf_s* filter, float sample_freq, float cutoff_freq)
+void lpf2p_init(struct lpf2p_s* filter, float sample_freq, float cutoff_freq)
 {
 	filter->cutoff_freq=cutoff_freq;
 	filter->a1=0.0f;
@@ -13,12 +13,12 @@ void lpf_init(struct lpf_s* filter, float sample_freq, float cutoff_freq)
 	filter->delay_element_1=0.0f;
 	filter->delay_element_2=0.0f;
         // set initial parameters
-	lpf_set_cutoff_frequency(filter, sample_freq, cutoff_freq);
+	lpf2p_set_cutoff_frequency(filter, sample_freq, cutoff_freq);
 }
 
 
 
-void lpf_set_cutoff_frequency(struct lpf_s* filter, float sample_freq, float cutoff_freq)
+void lpf2p_set_cutoff_frequency(struct lpf2p_s* filter, float sample_freq, float cutoff_freq)
 {
 	filter->cutoff_freq = cutoff_freq;
     if (filter->cutoff_freq <= 0.0f) {
@@ -35,7 +35,7 @@ void lpf_set_cutoff_frequency(struct lpf_s* filter, float sample_freq, float cut
     filter->a2 = (1.0f-2.0f*cosf(M_PI_F/4.0f)*ohm+ohm*ohm)/c;
 }
 
-float lpf_apply(struct lpf_s* filter, float sample)
+float lpf2p_apply(struct lpf2p_s* filter, float sample)
 {
     if (filter->cutoff_freq <= 0.0f) {
         // no filtering
@@ -57,16 +57,22 @@ float lpf_apply(struct lpf_s* filter, float sample)
     return output;
 }
 
-float lpf_reset(struct lpf_s* filter, float sample) {
+float lpf2p_reset(struct lpf2p_s* filter, float sample) {
 	float dval = sample / (filter->b0 + filter->b1 + filter->b2);
 	filter->delay_element_1 = dval;
 	filter->delay_element_2 = dval;
-    return lpf_apply(filter, sample);
+    return lpf2p_apply(filter, sample);
 }
 
-float lpf_get_cutoff_freq(struct lpf_s* filter)
+
+void lpf1p_init(struct lpf1p_s* filter, float sample_freq, float cutoff_freq)
 {
-	return filter->cutoff_freq;
+    filter->k = sample_freq / (1.0f/(2.0f*M_PI_F*cutoff_freq) + sample_freq);   
 }
 
+float lpf1p_apply(struct lpf1p_s* filter, float sample)
+{
+    filter->state = filter->state + filter->k * (sample - filter->state);
+    return filter->state;    
+}
 

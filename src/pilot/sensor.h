@@ -15,14 +15,15 @@ struct imu_s
     Vector acc;
     Vector gyro;
     Vector gyro_offset;
+    bool gyro_need_cal;
     float temp;
 
-	struct lpf_s	acc_filter_x;
-	struct lpf_s	acc_filter_y;
-	struct lpf_s	acc_filter_z;
-	struct lpf_s	gyro_filter_x;
-	struct lpf_s	gyro_filter_y;
-	struct lpf_s	gyro_filter_z;
+	struct lpf2p_s	acc_filter_x;
+	struct lpf2p_s	acc_filter_y;
+	struct lpf2p_s	acc_filter_z;
+	struct lpf2p_s	gyro_filter_x;
+	struct lpf2p_s	gyro_filter_y;
+	struct lpf2p_s	gyro_filter_z;
 
     enum Rotation rotation;
 
@@ -47,6 +48,7 @@ struct baro_s
     float temperature;
     float pressure;
     float altitude;
+    // float vel;
 
     //method
     init_func* init;
@@ -84,6 +86,7 @@ void baro_update(uint8_t ins);
 float baro_get_press(uint8_t ins);
 float baro_get_altitude(uint8_t ins);
 float baro_get_temp(uint8_t ins);
+// float baro_get_vel(uint8_t ins);
 
 void sensor_init(void);
 

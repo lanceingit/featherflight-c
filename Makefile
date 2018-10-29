@@ -84,14 +84,14 @@ PROJ_OBJ += mpu6050_linux.o spl06_linux.o
 
 # module
 PROJ_OBJ += mavlink_log.o 
-PROJ_OBJ += log.o param.o sensor.o mtd.o param_api.o
+PROJ_OBJ += log.o param.o mtd.o param_api.o cli.o
 PROJ_OBJ += scheduler.o 
 
 #link
-PROJ_OBJ += link_mavlink.o 
+PROJ_OBJ += link_mavlink.o link_wwlink.o 
 
 #pilot
-PROJ_OBJ += att_est_q.o att_est_cf.o est.o mixer.o commander.o att_control.o
+PROJ_OBJ += att_est_q.o att_est_cf.o est.o mixer.o commander.o att_control.o sensor.o 
 
 #mathlib
 PROJ_OBJ += mathlib.o matrix.o vector.o quaternion.o dcm.o srcdkf.o
@@ -115,7 +115,7 @@ INCLUDES  = -Isrc -Isrc/config
 INCLUDES += -Isrc/bsp -Isrc/driver \
 			-Isrc/pilot \
 		    -Isrc/modules -Isrc/link -Isrc/mathlib -Isrc/utils -Isrc/param
-INCLUDES += -I$(MAVLINKLIB) -I$(MAVLINKLIB)/common
+INCLUDES += -I$(MAVLINKLIB) -I$(MAVLINKLIB)/common -Isrc/link/wwlink
 #INCLUDES += -I$(LIB)/STM32F30x_StdPeriph_Driver/inc
 #INCLUDES += -I$(LIB)/CMSIS/CM4/DeviceSupport/ST/STM32F4xx
 #INCLUDES += -I$(LIB)/CMSIS/CM4/CoreSupport

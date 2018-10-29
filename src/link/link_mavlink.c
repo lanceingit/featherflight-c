@@ -43,7 +43,7 @@ mavlink_system_t mavlink_system;
 
 void handle_log_request_list(mavlink_message_t *msg);
 
-void link_mavlink_init()
+void mavlink_init(void)
 {   
     mavlink_system.sysid = MAV_SYS;
     mavlink_system.compid = MAV_COMP;
@@ -86,40 +86,7 @@ void link_mavlink_init()
 #endif    
 }    
 
-
-//void link_mavlink_send(mavlink_message_t &msg)
-//{
-//    mavlink_message_t msg;
-//    uint16_t len;
-//    
-//    mavlink_msg_heartbeat_pack(0, 0, &msg,
-//                               MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_PX4, 
-//                               MAV_MODE_FLAG_TEST_ENABLED, 0, MAV_STATE_STANDBY);
-//    
-//    len = mavlink_msg_to_send_buffer(sendbuf, &msg);
-//    
-//    for(uint16_t i=0; i<len; i++)
-//    {
-//        USART_SendData(USART1, sendbuf[i]);
-//        while (!USART_GetFlagStatus(USART1,USART_FLAG_TC));
-//    }
-//    
-//    //vTaskDelay(M2T(200));
-//    
-//    mavlink_msg_sys_status_pack(0, 0, &msg,
-//                               0, 0, 0,10, 0, 0, 0, 0, 0, 0,0, 0, 0)    ;
-
-//    len = mavlink_msg_to_send_buffer(sendbuf, &msg);
-//    
-//    for(uint16_t i=0; i<len; i++)
-//    {
-//        USART_SendData(USART1, sendbuf[i]);
-//        while (!USART_GetFlagStatus(USART1,USART_FLAG_TC));
-//    }    
-//    
-//}
-
-void link_mavlink_msg_send(mavlink_message_t* msg)
+void mavlink_msg_send(mavlink_message_t* msg)
 {
     uint16_t len;
        
@@ -131,7 +98,7 @@ void link_mavlink_msg_send(mavlink_message_t* msg)
 #endif
 }
 
-bool link_mavlink_recv(mavlink_message_t* msg)
+bool mavlink_recv(mavlink_message_t* msg)
 {
 
 #ifdef F3_EVO
@@ -163,7 +130,10 @@ static times_t last_heartbeat_update_time = 0;
 static times_t last_sen_update_time = 0;
 static times_t last_att_update_time = 0;
 
-void link_mavlink_stream(void)
+extern float baro_vari;
+extern float baro_vel;
+
+void mavlink_stream(void)
 {
     if(timer_check(&last_heartbeat_update_time, 1000*1000))
     {
@@ -183,18 +153,18 @@ void link_mavlink_stream(void)
                                baro_get_press(0), 0, baro_get_altitude(0), baro_get_temp(0),
                                0xFFFF);
 
-        Vector v;
-        imu_get_acc(0, &v);
-        mavlink_msg_named_value_float_send(MAV_CH,
-                               timer_now(),
-                               "acc_len",
-                               vector_length(v));
+        // Vector v;
+        // imu_get_acc(0, &v);
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                        timer_now(),
+        //                        "acc_len",
+        //                        vector_length(v));
 
-        imu_get_gyro(0, &v);
-        mavlink_msg_named_value_float_send(MAV_CH,
-                               timer_now(),
-                               "gyro_len",
-                               vector_length(v));
+        // imu_get_gyro(0, &v);
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                        timer_now(),
+        //                        "gyro_len",
+        //                        vector_length(v));
 
         // compass_get_mag(0, &v);
         // mavlink_msg_named_value_float_send(MAV_CH,
@@ -215,15 +185,15 @@ void link_mavlink_stream(void)
                                att_get_yaw_rate()
                                  );
 
-        mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "bias_x",
-                              att_est_q.heir.gyro_bias.x);
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                       timer_now(),
+        //                       "bias_x",
+        //                       att_est_q.heir.gyro_bias.x);
 
-        mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "bias_y",
-                              att_est_q.heir.gyro_bias.y);
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                       timer_now(),
+        //                       "bias_y",
+        //                       att_est_q.heir.gyro_bias.y);
 
 //        mavlink_msg_named_value_float_send(MAV_CH,
 //                               timer_now(),
@@ -235,15 +205,25 @@ void link_mavlink_stream(void)
 //                               "corr_acc_y",
 //                               att_get_corr_acc_y());
 
-        mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "corr_all_x",
-                              att_est_q.heir.corr.x);
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                       timer_now(),
+        //                       "corr_all_x",
+        //                       att_est_q.heir.corr.x);
+
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                       timer_now(),
+        //                       "corr_all_y",
+        //                       att_est_q.heir.corr.y);
 
         mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
-                              "corr_all_y",
-                              att_est_q.heir.corr.y);
+                              "baro_vari",
+                              baro_vari);    
+
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "baro_vel",
+                              baro_vel);                                                   
     }
 }
 

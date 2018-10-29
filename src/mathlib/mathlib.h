@@ -18,16 +18,23 @@
 
 #define CONSTANTS_ONE_G     9.80665f;						// m/s^2
 
+
+
 struct variance_s
 {
-	float sum_x2;
 	float sum;
-	uint8_t cnt;
+	float sum_sq;
+	uint8_t size;
+	struct fifo_f_s fifo;
+	float data[100];
+	struct fifo_f_s fifo_sq;
+	float data_sq[100];
 };
 
 float inv_sqrt(float x);
 float constrain(float val, float min_val, float max_val);
 float wrap_pi(float bearing);
 float press2alt(float p);
-void variance_collect(struct variance_s* v, float val);
-float variance_cal(struct variance_s* v);
+
+void variance_create(struct variance_s* v, uint8_t size);
+float variance_cal(struct variance_s* v, float val);

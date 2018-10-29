@@ -14,17 +14,16 @@
 
 
 
-
-void fifo_create(struct fifo_s *fifo, uint8_t *buf, uint16_t size)
+void fifo_f_create(struct fifo_f_s *fifo, float *buf, uint16_t size)
 {
     fifo->head = 0;
     fifo->tail = 0;
     fifo->data = buf;
     fifo->size = size;
+    fifo->cnt = 0;
 }
 
-
-int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
+int8_t fifo_f_write(struct fifo_f_s *fifo, float c)
 {
     if(fifo->head + 1 == fifo->tail)
     {
@@ -42,6 +41,63 @@ int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
     return 0;
 }
 
+void fifo_f_write_force(struct fifo_f_s *fifo, float c)
+{  
+    if(fifo->head + 1 == fifo->tail)
+    {
+        fifo->tail = fifo->head;
+    }
+    fifo->data[fifo->head] = c;
+    fifo->head++;
+    fifo->cnt++;
+    if(fifo->head >= fifo->size)
+    {
+        fifo->head = 0;
+        if(fifo->tail == 0)
+        {
+            fifo->tail = fifo->size -1;
+        }
+    } 
+}
+
+int8_t fifo_f_read(struct fifo_f_s *fifo, float* c)
+{
+    if(fifo->head == fifo->tail)
+    {
+        return -1;
+    }
+
+    *c = fifo->data[fifo->tail];
+    fifo->tail++;
+    fifo->cnt--;
+    if(fifo->tail >= fifo->size)
+    {
+        fifo->tail = 0;
+    }
+
+    return 0;
+}
+
+bool fifo_f_is_empty(struct fifo_f_s *fifo)
+{
+    return (fifo->head == fifo->tail);
+}
+
+uint16_t fifo_f_get_count(struct fifo_f_s *fifo)
+{
+	return fifo->cnt;
+}
+
+/**********************/
+
+void fifo_create(struct fifo_s *fifo, uint8_t *buf, uint16_t size)
+{
+    fifo->head = 0;
+    fifo->tail = 0;
+    fifo->data = buf;
+    fifo->size = size;
+    fifo->cnt = 0;
+}
 
 void fifo_write_force(struct fifo_s *fifo, uint8_t c)
 {  

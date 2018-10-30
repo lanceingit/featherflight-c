@@ -78,6 +78,7 @@ static inline void awlink_encode_system_heart(uint8_t i){
 
 static inline void wwlink_decode_system_heart(wwlink_message_t* msg)
 {
+	
 }
 
 static inline void wwlink_sys_handle(wwlink_message_t* msg)

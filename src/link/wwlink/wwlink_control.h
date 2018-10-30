@@ -6,8 +6,6 @@
 #define WWLINK_ITEM_CONTROL_CALIBRATE	2
 #define WWLINK_ITEM_CONTROL_MODE		3
 
-#define RANGE 1000.0;
-
 typedef struct {
 	int16_t roll;
 	int16_t pitch;
@@ -32,23 +30,23 @@ typedef struct PACKED{
 }wwlink_control_mode_s;
 
 
-static inline void wwlink_decode_control_joystick(wwlink_message_t* msg_rev)
+static inline void wwlink_decode_control_joystick(wwlink_message_t* msg_rev, float* roll, float* pitch, float* yaw, float* thr)
 {
-	float roll,pitch,yaw,thr;
 	wwlink_control_joystick_s * data;
 	data = (wwlink_control_joystick_s *)msg_rev->data;
 	
-	roll = (float)data->roll / RANGE;
-	pitch = -(float)data->pitch / RANGE;
-	yaw	= (float)data->yaw / RANGE;
-	thr	= (float)data->throttle/ RANGE;
+	*roll = (float)data->roll / 1000.0f;
+	*pitch = -(float)data->pitch / 1000.0f;
+	*yaw	= (float)data->yaw / 1000.0f;
+	*thr	= (float)data->throttle/ 1000.0f;
+	// printf("r:%f p:%f y:%f t:%f\n", roll, pitch, yaw, thr); 
 }
 
 static inline void wwlink_decode_control_status_rate(wwlink_message_t* msg_rev)
 {
-	wwlink_control_status_rate_s * data;
-	data = (wwlink_control_status_rate_s *)msg_rev->data;
-	printf("recv rate: %d %d\n", data->type,data->rate);
+	// wwlink_control_status_rate_s * data;
+	// data = (wwlink_control_status_rate_s *)msg_rev->data;
+	// printf("recv rate: %d %d\n", data->type,data->rate);
 //	wwlink_stream_set_rate(data->type,data->rate);
 }
 
@@ -65,17 +63,17 @@ static inline void wwlink_decode_control_calibrate(wwlink_message_t* msg_rev)
 
 static inline void wwlink_decode_control_mode(wwlink_message_t* msg_rev)
 {
-	wwlink_control_mode_s * data;
-	data = (wwlink_control_mode_s *)msg_rev->data;	
+	// wwlink_control_mode_s * data;
+	// data = (wwlink_control_mode_s *)msg_rev->data;	
 }
 
 
 static inline void wwlink_control_handle(wwlink_message_t* msg)
 {
 	switch(msg->subitem_id){
-		case WWLINK_ITEM_CONTROL_JOYSTICK:
-			wwlink_decode_control_joystick(msg);
-			break;
+		// case WWLINK_ITEM_CONTROL_JOYSTICK:
+		// 	wwlink_decode_control_joystick(msg);
+		// 	break;
 		case WWLINK_ITEM_CONTROL_STATUS_RATE:
 			wwlink_encode_system_ack(WWLINK_ACK_OK,WWLINK_ITEM_CONTROL,msg->subitem_id);
 			wwlink_decode_control_status_rate(msg);

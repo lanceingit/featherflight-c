@@ -2,6 +2,8 @@
 #include "link_wwlink.h"
 #include "debug.h"
 #include "timer.h"
+#include "est.h"
+#include "commander.h"
 
 #if LINUX 
 #include <stdio.h>
@@ -30,15 +32,15 @@
 struct sockaddr_in addr;
 static int socket_fd = -1;
 static int addr_len = 0;
+static uint8_t buffer[200];
 #endif
 
-static uint8_t type;
-static uint16_t wwlink_parse_error;
+//static uint8_t type;
 static uint8_t  wwlink_parse_step;
 static uint8_t  wwlink_parse_data_count;
 static uint16_t wwlink_parse_checksum;
-static wwlink_message_t wwlink_package;
 static uint8_t data[100];
+bool connected=false;
 
 void wwlink_init(void)
 {
@@ -69,7 +71,7 @@ void wwlink_init(void)
 
 void wwlink_handle_message(wwlink_message_t* msg)
 {
-    switch(msg->id_src)
+    switch(msg->item_id)
     {
         case WWLINK_ITEM_SYSTEM:
             wwlink_sys_handle(msg);
@@ -78,7 +80,19 @@ void wwlink_handle_message(wwlink_message_t* msg)
             wwlink_status_handle(msg);
             break;
         case WWLINK_ITEM_CONTROL:
-            wwlink_control_handle(msg);
+//            wwlink_control_handle(msg);
+			if(msg->subitem_id == WWLINK_ITEM_CONTROL_JOYSTICK){
+				float roll; 
+				float pitch; 
+				float yaw; 
+				float thr; 
+				wwlink_decode_control_joystick(msg, &roll, &pitch, &yaw, &thr);
+				// PRINT("r:%f p:%f y:%f t:%f\n", roll, pitch, yaw, thr); 
+				commander_set_roll(1, roll);
+				commander_set_pitch(1, pitch);
+				commander_set_yaw(1, yaw);
+				commander_set_thrust(1, thr);
+			}
             break;
         default:break;    
     }
@@ -93,29 +107,31 @@ bool wwlink_parse_char(uint8_t ch, wwlink_message_t* msg)
 			if(ch == WWLINK_MAGIC){
 				wwlink_parse_checksum = wwlink_crc16_init();
 				wwlink_parse_step = WWLINK_PARSE_STEP_LENGTH;
-				wwlink_package.checksum = ch;
+				msg->checksum = ch;
 			}
 			break;
 		case WWLINK_PARSE_STEP_LENGTH:
 			wwlink_parse_step = WWLINK_PARSE_STEP_ID_SRC;
 			wwlink_parse_checksum = wwlink_crc16_update(ch,wwlink_parse_checksum);
-			wwlink_package.length = ch;
+			msg->length = ch;
 			break;
 		case WWLINK_PARSE_STEP_ID_SRC:
 			wwlink_parse_step = WWLINK_PARSE_STEP_I_ID;
 			wwlink_parse_checksum = wwlink_crc16_update(ch,wwlink_parse_checksum);
-			wwlink_package.id_src = ch;
+			msg->id_src = ch;
 			break;
 		case WWLINK_PARSE_STEP_I_ID:
 			wwlink_parse_step = WWLINK_PARSE_STEP_SI_ID;
 			wwlink_parse_checksum = wwlink_crc16_update(ch,wwlink_parse_checksum);
-			wwlink_package.item_id = ch;
+			msg->item_id = ch;
 			break;
 		case WWLINK_PARSE_STEP_SI_ID:
 			wwlink_parse_step = WWLINK_PARSE_STEP_DATA;
+			wwlink_parse_data_count = 0;
+			msg->data = data;
 			wwlink_parse_checksum = wwlink_crc16_update(ch,wwlink_parse_checksum);
-			wwlink_package.subitem_id = ch;
-			if(wwlink_package.length == 0){				
+			msg->subitem_id = ch;
+			if(msg->length == 0){				
 				wwlink_parse_step = WWLINK_PARSE_STEP_CHECKSUM1;
 			}	
 			break;
@@ -124,20 +140,26 @@ bool wwlink_parse_char(uint8_t ch, wwlink_message_t* msg)
             data[wwlink_parse_data_count] = ch;
 			
 			wwlink_parse_data_count++;
-			if(wwlink_parse_data_count >= wwlink_package.length){
+			if(wwlink_parse_data_count >= msg->length){
 				wwlink_parse_step = WWLINK_PARSE_STEP_CHECKSUM1;
 			}
 			break;
 		case WWLINK_PARSE_STEP_CHECKSUM1:
 			if(ch == (wwlink_parse_checksum & 0xFF)){
 				wwlink_parse_step = WWLINK_PARSE_STEP_CHECKSUM2;
+			} else {
+				wwlink_parse_step = WWLINK_PARSE_STEP_MAGIC;
 			}
 			break;
 		case WWLINK_PARSE_STEP_CHECKSUM2:
 			if(ch == ((wwlink_parse_checksum >> 8) & 0xFF)){
 				ret = true;
 			}
+			wwlink_parse_step = WWLINK_PARSE_STEP_MAGIC;
 			break;
+		default:
+			wwlink_parse_step = WWLINK_PARSE_STEP_MAGIC;
+			break;	
 	}
 
 	return ret;
@@ -147,18 +169,27 @@ bool wwlink_recv(wwlink_message_t* msg)
 {
 #ifdef LINUX
     int len = 0;
-    uint16_t check_len = 0;
-    uint8_t buffer[300] = {};
+
     bzero(buffer, sizeof(buffer));
     len = recvfrom(socket_fd, buffer, sizeof(buffer), 0,(struct sockaddr *)&addr, (socklen_t*)&addr_len);
 
     if(len > 0) {
-        for(check_len = 0; check_len < len; check_len++) {
+        // char* client_ip = inet_ntoa(addr.sin_addr);
+        // PRINT("ip:%s port:%d len:%d\n", client_ip, addr.sin_port, len);
+		// if(buffer[1] == 8) { 
+		// 	PRINT_BUF("recv:", buffer, len);
+		// }
+
+        for(uint16_t check_len = 0; check_len < len; check_len++) {
             if(wwlink_parse_char(buffer[check_len], msg)) {
                 wwlink_handle_message(msg);
             }
         }
-    }
+		connected = true;
+		return true;
+    } else {
+		return false;
+	}
 #else    
 	return false;
 #endif
@@ -167,18 +198,23 @@ bool wwlink_recv(wwlink_message_t* msg)
 void wwlink_send(uint8_t* data, uint16_t len)
 {
 #ifdef LINUX
-    sendto(socket_fd, data, len, 0, (struct sockaddr *)&addr,addr_len);
+	if(connected) {
+	    sendto(socket_fd, data, len, 0, (struct sockaddr *)&addr,addr_len);
+	}
 #endif
 }
 
 
 static times_t last_heartbeat_update_time = 0;
+static times_t last_info_update_time = 0;
 
 void wwlink_stream(void)
 {
-    if(timer_check(&last_heartbeat_update_time, 1000*1000))
-    {
+    if(timer_check(&last_heartbeat_update_time, 1000*1000)) {
 		awlink_encode_system_heart(0);
-		PRINT("send heart beat\n");
     }
+    if(timer_check(&last_info_update_time, 50*1000)) {
+		wwlink_encode_status_base_info(att_get_roll(), att_get_pitch(), att_get_yaw());
+    }
+
 }

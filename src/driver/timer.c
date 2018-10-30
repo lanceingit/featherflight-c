@@ -105,6 +105,17 @@ bool timer_check(times_t* t, uint32_t us)
     return false;    
 }
 
+float timer_get_dt(times_t* t, float max, float min)
+{
+	float dt = (*t > 0) ? ((timer_now()-*t) / 1000000.0f) : min;
+	*t = timer_now();
+
+	if (dt > max) {
+		dt = max;
+	}
+    return dt;
+}
+
 void delay(float s)
 {
     volatile times_t wait;

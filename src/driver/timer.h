@@ -20,6 +20,7 @@ times_t timer_now(void);
 times_t timer_elapsed(times_t* t);
 
 bool timer_check(times_t* t, uint32_t us);
+float timer_get_dt(times_t* t, float max, float min);
     
 void delay(float s);
 void delay_ms(uint32_t ms);

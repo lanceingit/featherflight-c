@@ -17,6 +17,7 @@
 #include "sensor.h"
 #include "att_est_q.h"
 #include "timer.h"
+#include "mathlib.h"
 
 
 #define RX_BUF_SIZE 300    
@@ -148,7 +149,7 @@ void mavlink_stream(void)
         mavlink_msg_highres_imu_send(MAV_CH,
                                timer_now(),
                                imu_get_acc_x(0), imu_get_acc_y(0), imu_get_acc_z(0),
-                               imu_get_gyro_x(0),imu_get_gyro_y(0),imu_get_gyro_z(0),
+                               imu_get_gyro_x(0)*M_RAD_TO_DEG,imu_get_gyro_y(0)*M_RAD_TO_DEG,imu_get_gyro_z(0)*M_RAD_TO_DEG,
                                compass_get_mag_x(0), compass_get_mag_y(0), compass_get_mag_z(0),
                                baro_get_press(0), 0, baro_get_altitude(0), baro_get_temp(0),
                                0xFFFF);
@@ -177,9 +178,9 @@ void mavlink_stream(void)
     {
         mavlink_msg_attitude_send(MAV_CH,
                                timer_now(), 
-                               att_get_roll(),
-                               att_get_pitch(),
-                               att_get_yaw(),
+                               att_get_roll()*M_DEG_TO_RAD,
+                               att_get_pitch()*M_DEG_TO_RAD,
+                               att_get_yaw()*M_DEG_TO_RAD,
                                att_get_roll_rate(),
                                att_get_pitch_rate(),
                                att_get_yaw_rate()

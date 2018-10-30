@@ -17,4 +17,5 @@ void perf_init(struct perf_s* perf);
 void perf_interval(struct perf_s* perf);
 void perf_begin(struct perf_s* perf);
 void perf_end(struct perf_s* perf);
+void perf_print(struct perf_s* perf, char* name);
 

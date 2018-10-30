@@ -46,11 +46,6 @@ static void handle_log_request_list(mavlink_message_t* msg)
 //    mavlink_log_request_list_t packet;
 //    mavlink_msg_log_request_list_decode(msg, &packet);
 
-
-    mavlink_message_t msg_send;
-    uint8_t system_id=2;
-    uint8_t component_id=1;
-
     mavlink_msg_log_entry_send(MAV_CH,
     						     0, 1, 1, 0, log_get_size());
 }
@@ -65,9 +60,6 @@ static void handle_log_request_data(mavlink_message_t* msg)
     
     log_data.ofs = req.ofs;
 
-    mavlink_message_t msg_send;
-    uint8_t system_id=2;
-    uint8_t component_id=1;
 	uint32_t last_data = log_get_size() - log_data.ofs;
 
 //	while(last_data > 0)
@@ -91,9 +83,6 @@ void mavlink_log_run(void)
 {
 	if(status == LOG_READ)
 	{
-        mavlink_message_t msg_send;
-        uint8_t system_id=2;
-        uint8_t component_id=1;
         uint32_t last_data = log_get_size() - log_data.ofs;
 
     //	while(last_data > 0)

@@ -18,10 +18,12 @@
 #include "commander.h"
 #include "cli.h"
 #include "debug.h"
+#include "navigator.h"
 
 struct perf_s main_perf;
 struct perf_s att_perf;
 struct perf_s att_elapsed;
+struct perf_s link_perf;
 
 struct task_s link_task;
 struct task_s cli_task;
@@ -30,24 +32,14 @@ struct task_s compass_task;
 struct task_s baro_task;
 struct task_s att_task;
 struct task_s commander_task;
+struct task_s navigator_task;
 
 struct variance_s baro_variance;
 float baro_vari;
 float baro_vel;
 
 
-void task_link_send(void)
-{
-    mavlink_stream();
-    wwlink_stream();
-}
-
-void task_cli(void)
-{
-    cli_updata();
-}
-
-void task_link_recv(void)
+void task_link(void)
 {
 	mavlink_message_t msg;
     wwlink_message_t wwmsg;
@@ -58,6 +50,16 @@ void task_link_recv(void)
 	}
 
     wwlink_recv(&wwmsg);    
+    mavlink_stream();
+    wwlink_stream();
+
+    perf_interval(&link_perf);
+    // perf_print(&link_perf, "link");
+}
+
+void task_cli(void)
+{
+    cli_updata();
 }
 
 void task_imu(void)
@@ -79,7 +81,7 @@ void task_baro(void)
 
     float alt = baro_get_altitude(0);
 
-    baro_alt_f = ((baro_alt_f * 0.7) + (alt * (1.0f - 0.7)));
+    baro_alt_f = ((baro_alt_f * 0.7f) + (alt * (1.0f - 0.7f)));
     baro_vel = (baro_alt_f - baro_alt_f_old) / (0.025000f);
     baro_alt_f_old = baro_alt_f;
 
@@ -101,6 +103,11 @@ void task_att(void)
 void task_commander(void)
 {
     commander_update();
+}
+
+void task_navigator(void)
+{
+    navigator_update();
 }
 
 // void task_log(void)
@@ -147,6 +154,7 @@ int main()
     est_init();
     perf_init(&main_perf);
     perf_init(&att_perf);
+    perf_init(&link_perf);
     perf_init(&att_elapsed);
 
     variance_create(&baro_variance, 100);
@@ -156,7 +164,8 @@ int main()
     task_create(&baro_task, 25000, task_baro);
     task_create(&att_task, 1000, task_att);
     task_create(&commander_task, 1000, task_commander);
-    task_create(&link_task, 10*1000, task_link_send);
+    task_create(&navigator_task, 1000, task_navigator);
+    task_create(&link_task, 2*1000, task_link);
     task_create(&cli_task, 100*1000, task_cli);
 
     while(1)
@@ -164,6 +173,7 @@ int main()
         scheduler_run();
 
         perf_interval(&main_perf);
+        // perf_print(&main_perf, "main loop");
     }
     
     return 0;

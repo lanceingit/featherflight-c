@@ -25,7 +25,7 @@ int8_t param_get_val(char* name, float* val)
 
 	// return -1;
 
-    struct param_val* param;
+    struct param_val* param=NULL;
     if(param_find(name, param) == 0) {
         *val = param->get();
         return 0;
@@ -45,7 +45,7 @@ int8_t param_set_val(char* name, float val)
 
 	// return -1;
 
-    struct param_val* param;
+    struct param_val* param=NULL;
     if(param_find(name, param) == 0) {
         param->set(val);
         return 0;

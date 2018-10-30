@@ -2,22 +2,6 @@
 #include "mathlib.h"
 #include "lpf.h"
 
-void lpf2p_init(struct lpf2p_s* filter, float sample_freq, float cutoff_freq)
-{
-	filter->cutoff_freq=cutoff_freq;
-	filter->a1=0.0f;
-	filter->a2=0.0f;
-	filter->b0=0.0f;
-	filter->b1=0.0f;
-	filter->b2=0.0f;
-	filter->delay_element_1=0.0f;
-	filter->delay_element_2=0.0f;
-        // set initial parameters
-	lpf2p_set_cutoff_frequency(filter, sample_freq, cutoff_freq);
-}
-
-
-
 void lpf2p_set_cutoff_frequency(struct lpf2p_s* filter, float sample_freq, float cutoff_freq)
 {
 	filter->cutoff_freq = cutoff_freq;
@@ -33,6 +17,20 @@ void lpf2p_set_cutoff_frequency(struct lpf2p_s* filter, float sample_freq, float
     filter->b2 = filter->b0;
     filter->a1 = 2.0f*(ohm*ohm-1.0f)/c;
     filter->a2 = (1.0f-2.0f*cosf(M_PI_F/4.0f)*ohm+ohm*ohm)/c;
+}
+
+void lpf2p_init(struct lpf2p_s* filter, float sample_freq, float cutoff_freq)
+{
+	filter->cutoff_freq=cutoff_freq;
+	filter->a1=0.0f;
+	filter->a2=0.0f;
+	filter->b0=0.0f;
+	filter->b1=0.0f;
+	filter->b2=0.0f;
+	filter->delay_element_1=0.0f;
+	filter->delay_element_2=0.0f;
+        // set initial parameters
+	lpf2p_set_cutoff_frequency(filter, sample_freq, cutoff_freq);
 }
 
 float lpf2p_apply(struct lpf2p_s* filter, float sample)

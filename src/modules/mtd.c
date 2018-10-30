@@ -22,6 +22,7 @@ static struct fifo_s write_fifo;
 static uint8_t buf[BUF_SIZE];
 #ifdef F3_EVO
 static uint8_t page_buf[M25P16_PAGESIZE];
+#elif LINUX
 #else
 static uint8_t page_buf[100];
 #endif

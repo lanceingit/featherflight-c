@@ -1,5 +1,6 @@
 #include "board.h"
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "mpu6050_linux.h"
 #include "lpf.h"

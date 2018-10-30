@@ -1,6 +1,12 @@
+#include "board.h"
 #include "commander.h"
 #include "att_control.h"
 #include "mixer.h"
+
+bool stabilize_init(void)
+{
+    return true;
+}
 
 void stabilize_update(float dt)
 {

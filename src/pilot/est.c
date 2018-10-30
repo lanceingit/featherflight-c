@@ -4,6 +4,7 @@
 #include "timer.h"
 #include "sensor.h"
 #include "debug.h"
+#include "mathlib.h"
 
 static struct att_est_s* est_att;
 
@@ -90,14 +91,7 @@ void est_att_run(void)
 		}
     }
 
-	/* time from previous iteration */
-	times_t now = timer_now();
-	float dt = (est_att->last_time > 0) ? ((now  - est_att->last_time) / 1000000.0f) : 0.00001f;
-	est_att->last_time = now;
-
-	if (dt > est_att->dt_max) {
-		dt = est_att->dt_max;
-	}
+	float dt = timer_get_dt(&est_att->last_time, est_att->dt_max, 0.00001f);
 
 	if (!est_att->heir.run(dt)) {
 		return;
@@ -105,11 +99,11 @@ void est_att_run(void)
 
     Vector euler = quaternion_to_euler(est_att->q);  
 
-    est_att->roll_rate = imu_get_gyro_x(0) + est_att->gyro_bias.x;
-    est_att->pitch_rate = imu_get_gyro_y(0) + est_att->gyro_bias.y;
-    est_att->yaw_rate = imu_get_gyro_z(0) + est_att->gyro_bias.z;
+    est_att->roll_rate =  (imu_get_gyro_x(0) + est_att->gyro_bias.x)*M_RAD_TO_DEG;
+    est_att->pitch_rate = (imu_get_gyro_y(0) + est_att->gyro_bias.y)*M_RAD_TO_DEG;
+    est_att->yaw_rate =   (imu_get_gyro_z(0) + est_att->gyro_bias.z)*M_RAD_TO_DEG;
 
-    est_att->roll = euler.x;
-    est_att->pitch = euler.y;
-    est_att->yaw = euler.z;    
+    est_att->roll = euler.x*M_RAD_TO_DEG;
+    est_att->pitch = euler.y*M_RAD_TO_DEG;
+    est_att->yaw = euler.z*M_RAD_TO_DEG;    
 }

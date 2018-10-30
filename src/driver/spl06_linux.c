@@ -1,5 +1,6 @@
 #include "board.h"
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "spl06_linux.h"
 #include "sensor.h"
@@ -41,7 +42,7 @@ void spl06_convert(struct spl06_report_s *rp,float * press,float *temp)
 	tsc = rp->temp / (float)rp->cali.kT;
 	psc = rp->press / (float)rp->cali.kP;
 
-	tcompensate = rp->cali.c0 * 0.5 + rp->cali.c1 * tsc;
+	tcompensate = rp->cali.c0 * 0.5f + rp->cali.c1 * tsc;
 
 	qua2 = rp->cali.c10 + psc * (rp->cali.c20 + psc* rp->cali.c30);
 	qua3 = tsc * psc * (rp->cali.c11 + psc * rp->cali.c21);

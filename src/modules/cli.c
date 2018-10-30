@@ -147,7 +147,6 @@ bool cli_char_parse(char c)
 
 void cli_updata(void)
 {
-    char c;
     int len = cli_device_read(read_buffer, BUFFER_SIZE);
 
     if(len<=0) return;

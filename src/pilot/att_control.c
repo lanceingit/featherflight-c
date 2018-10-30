@@ -44,16 +44,14 @@ void att_control_init(void)
 
 void att_control_roll_pitch_rate_update(float dt, float roll_rate_target, float pitch_rate_target, float limit)
 {
-	float rate_taret_roll;
-	float rate_taret_pitch;
 	float roll_output;
 	float pitch_output;  
 
-	rate_taret_roll = constrain(rate_taret_roll, -limit, limit);
-	rate_taret_pitch = constrain(rate_taret_pitch, -limit, limit);
+	roll_rate_target = constrain(roll_rate_target, -limit, limit);
+	pitch_rate_target = constrain(pitch_rate_target, -limit, limit);
 
-	roll_output = pid_update(&rate_pid_roll, rate_taret_roll-att_get_roll_rate(), dt);
-	pitch_output = pid_update(&rate_pid_pitch, rate_taret_pitch-att_get_pitch_rate(), dt);
+	roll_output = pid_update(&rate_pid_roll, roll_rate_target-att_get_roll_rate(), dt);
+	pitch_output = pid_update(&rate_pid_pitch, pitch_rate_target-att_get_pitch_rate(), dt);
 
 	mixer_set_roll(roll_output);
 	mixer_set_pitch(pitch_output);       

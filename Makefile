@@ -62,7 +62,7 @@ VPATH += src/driver src/modules src/link src/utils src/config src/param src/math
 #VPATH += src/kernel/FreeRTOS src/kernel/FreeRTOS/portable/MemMang src/kernel/FreeRTOS/portable/Common \
 #         src/kernel/FreeRTOS/portable/GCC/ARM_CM4F   
 #VPATH += src/utils/libcxx
-VPATH += src/pilot
+VPATH += src/pilot src/pilot/navigator
 
 
 ############### Source files configuration ################
@@ -93,6 +93,10 @@ PROJ_OBJ += link_mavlink.o link_wwlink.o
 #pilot
 PROJ_OBJ += att_est_q.o att_est_cf.o est.o mixer.o commander.o att_control.o sensor.o 
 
+#navgator
+PROJ_OBJ += navigator.o stabilize.o
+
+
 #mathlib
 PROJ_OBJ += mathlib.o matrix.o vector.o quaternion.o dcm.o srcdkf.o
 
@@ -113,8 +117,8 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 
 INCLUDES  = -Isrc -Isrc/config
 INCLUDES += -Isrc/bsp -Isrc/driver \
-			-Isrc/pilot \
-		    -Isrc/modules -Isrc/link -Isrc/mathlib -Isrc/utils -Isrc/param
+			-Isrc/pilot -Isrc/pilot/navigator \
+		    -Isrc/modules -Isrc/link -Isrc/mathlib -Isrc/utils -Isrc/param 
 INCLUDES += -I$(MAVLINKLIB) -I$(MAVLINKLIB)/common -Isrc/link/wwlink
 #INCLUDES += -I$(LIB)/STM32F30x_StdPeriph_Driver/inc
 #INCLUDES += -I$(LIB)/CMSIS/CM4/DeviceSupport/ST/STM32F4xx
@@ -161,7 +165,6 @@ VPATH += $(BUILD_DIR)
 #Dependency files to include
 DEPS := $(foreach o,$(OBJ),$(BUILD_DIR)/dep/$(o).d)
 
-
 #################### Targets ###############################
 
 
@@ -177,10 +180,12 @@ size: compile
 
 
 $(PROG): $(OBJ) 
-	$(LD) $(LDFLAGS) $(foreach o,$(OBJ),$(BUILD_DIR)/$(o)) -lm -o $(BIN_DIR)/$@
+	@echo LD $(OBJ) -o $@
+	@$(LD) $(LDFLAGS) $(foreach o,$(OBJ),$(BUILD_DIR)/$(o)) -lm -o $(BIN_DIR)/$@
 
 .c.o:
-	$(CC) $(CCFLAGS) -c $< -o $(BUILD_DIR)/$@
+	@echo CC $^ -o $@
+	@$(CC) $(CCFLAGS) -c $< -o $(BUILD_DIR)/$@
 
 
 clean:

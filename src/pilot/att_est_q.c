@@ -21,6 +21,9 @@ struct att_est_q_s att_est_q = {
             .init = &att_est_q_init,
             .run = &att_est_q_run,
         },
+		.roll = 0.0f,
+		.pitch = 0.0f,
+		.yaw = 0.0f,
 	},
 };
 

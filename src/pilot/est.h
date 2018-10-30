@@ -4,6 +4,7 @@
 #include "vector.h"
 #include "dcm.h"
 #include "func_type.h"
+#include "timer.h"
 
 
 struct est_s
@@ -24,20 +25,20 @@ struct att_est_s
     bool valid;
 
     bool use_compass;
-	uint64_t last_time;
+	times_t last_time;
 	float dt_max;
 
     Vector acc;
     Vector gyro;
     Vector mag;
 
-    float roll;
-    float pitch;
-    float yaw;
+    float roll;     //DEG
+    float pitch;    //DEG
+    float yaw;      //DEG
 
-    float roll_rate;
-    float pitch_rate;
-    float yaw_rate;    
+    float roll_rate;    //DEG/S
+    float pitch_rate;   //DEG/S
+    float yaw_rate;     //DEG/S
 
     Quaternion	q;
     Vector gyro_bias;

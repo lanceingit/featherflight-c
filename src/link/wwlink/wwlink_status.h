@@ -16,13 +16,16 @@ typedef struct PACKED {
 	bool  armed;
 }wwlink_status_base_info_s;
 
-static inline void wwlink_encode_status_base_info()
+static inline void wwlink_encode_status_base_info(float roll, float pitch, float yaw)
 {
-	uint8_t mode = 0;
 	wwlink_message_t msg;
 	wwlink_status_base_info_s data;	
 
     //data =   //TODO:
+	data.att[0] = roll;
+	data.att[1] = pitch;
+	data.att[2] = yaw;
+	data.capacity = 50;
 
 	msg.item_id = WWLINK_ITEM_STATUS;
 	msg.subitem_id = WWLINK_ITEM_STATUS_BASIC_INFO;

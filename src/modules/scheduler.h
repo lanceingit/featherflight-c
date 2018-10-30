@@ -19,6 +19,6 @@ void task_create(struct task_s* t, times_t interval, task_callback_func cb);
 void task_set_rate(struct task_s* t, times_t time);
 void task_disable(struct task_s* t);
 
-void sheduler_run(void);
+void scheduler_run(void);
 
 

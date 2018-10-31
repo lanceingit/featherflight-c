@@ -2,6 +2,7 @@
 #include "mathlib.h"
 #include <math.h>
 
+
 float inv_sqrt(float x)
 {
     float x_half = 0.5f * x;
@@ -54,34 +55,6 @@ float press2alt(float p)
 	return 44330 * (1 - powf(((float)p / (float)1013.25),(1/5.255)));  //FIXME:
 }
 
-// struct variance_s
-// {
-// 	float sum_x2;
-// 	float sum;
-// 	uint8_t cnt;
-// };
-
-// void variance_collect(struct variance_s* v, float val)
-// {
-// 	v->cnt++;
-// 	v->sum += val;
-//     v->sum_x2 += POW2(val);	
-// }
-
-// float variance_cal(struct variance_s* v)
-// {
-// 	float s2;
-// 	float s3;
-// 	float avg;
-
-// 	avg = v->sum / v->cnt;
-// 	s2 = 2 * avg * v->sum;
-//     s3 = v->cnt * POW2(avg);
-//     return (v->sum_x2 - s2 + s3)/v->cnt; 
-// }
-
-
-
 void variance_create(struct variance_s* v, uint8_t size)
 {
 	v->size = size;
@@ -123,3 +96,24 @@ float variance_cal(struct variance_s* v, float val)
 	return variance;
 }
 
+Vector rotation_ef(Dcm r, Vector* b)
+{
+	Vector e;
+
+	e.x = r[0][0]*b->x + r[0][1]*b->y + r[0][2]*b->z;
+	e.y = r[1][0]*b->x + r[1][1]*b->y + r[1][2]*b->z;
+	e.z = r[2][0]*b->x + r[2][1]*b->y + r[2][2]*b->z;
+
+	return e;
+}
+
+Vector rotation_bf(Dcm r, Vector* e)
+{
+	Vector b;
+
+	b.x = r[0][0]*e->x + r[1][0]*e->y + r[2][0]*e->z;
+	b.y = r[0][1]*e->x + r[1][1]*e->y + r[2][1]*e->z;
+	b.z = r[0][2]*e->x + r[1][2]*e->y + r[2][2]*e->z;
+
+	return b;
+}

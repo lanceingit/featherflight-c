@@ -6,11 +6,25 @@
 #include "debug.h"
 #include "mathlib.h"
 
-static struct att_est_s* est_att;
+static struct att_est_s* est_att=NULL;
+static struct alt_est_s* est_alt=NULL;
 
-void att_est_register(struct att_est_s* att)
+void att_est_register(struct att_est_s* est)
 {
-    est_att = att;
+    est_att = est;
+}
+
+void att_init(void)
+{
+	if(est_att == NULL) {
+		PRINT("no est att register\n");
+		return;
+	}
+    est_att->use_compass = false;
+	est_att->heir.last_time = 0;
+	est_att->inited = false;    
+    
+    est_att->heir.init();   	
 }
 
 float att_get_roll(void)
@@ -53,14 +67,41 @@ void att_get_dcm(Dcm r)
 	quaternion_to_dcm(est_att->q, r);
 }
 
+void alt_init(void)
+{
+	if(est_alt == NULL) {
+		PRINT("no est alt register\n");
+		return;
+	}
+
+    est_alt->inited = false;
+	est_alt->alt = 0.0f;		
+	est_alt->vel = 0.0f;
+	est_alt->valid = false;
+	est_alt->ref_alt = 0.0f;
+    est_alt->ref_inited = false;
+	est_alt->heir.init();
+}
+
+void alt_est_register(struct alt_est_s* est)
+{
+	est_alt = est;
+}
+
+float alt_est_get_alt(void)
+{
+	return est_alt->alt;
+}
+
+float alt_est_get_vel(void)
+{
+	return est_alt->vel;
+}
+
 void est_init(void)
 {
-    est_att->use_compass = false;
-	est_att->last_time = 0;
-	est_att->dt_max = 0.02f;
-	est_att->inited = false;    
-    
-    est_att->heir.init();   
+	att_init();
+	alt_init();
 }
 
 void est_att_run(void)
@@ -91,7 +132,7 @@ void est_att_run(void)
 		}
     }
 
-	float dt = timer_get_dt(&est_att->last_time, est_att->dt_max, 0.00001f);
+	float dt = timer_get_dt(&est_att->heir.last_time, 0.02f, 0.00001f);
 
 	if (!est_att->heir.run(dt)) {
 		return;
@@ -106,4 +147,26 @@ void est_att_run(void)
     est_att->roll = euler.x*M_RAD_TO_DEG;
     est_att->pitch = euler.y*M_RAD_TO_DEG;
     est_att->yaw = euler.z*M_RAD_TO_DEG;    
+}
+
+
+void est_alt_run(void)
+{
+	#define BARO_CAL_MAX  500
+	static uint16_t baro_read_cnt=0;
+
+	if(!est_alt->ref_inited) {
+		if(baro_read_cnt < BARO_CAL_MAX) {
+			est_alt->ref_alt += baro_get_altitude(0); 
+			baro_read_cnt++;
+		} else {
+			est_alt->ref_alt /= BARO_CAL_MAX;
+			est_alt->ref_inited = true; 
+		}
+		return;
+	}
+
+	float dt = timer_get_dt(&est_alt->heir.last_time, 0.1f, 0.00001f);
+
+	est_alt->heir.run(dt);
 }

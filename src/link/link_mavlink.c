@@ -15,9 +15,10 @@
 
 #include "link_mavlink.h"
 #include "sensor.h"
-#include "att_est_q.h"
+#include "est.h"
 #include "timer.h"
 #include "mathlib.h"
+
 
 
 #define RX_BUF_SIZE 300    
@@ -172,6 +173,40 @@ void mavlink_stream(void)
         //                        timer_now(),
         //                        "mag_len",
         //                        vector_length(v));
+
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_alt",
+                              alt_est_3o.heir.alt);          
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_vel",
+                              alt_est_3o.heir.vel);          
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_acc",
+                              alt_est_3o.heir.acc_neu_z);          
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_acc_u",
+                              alt_est_3o.acc_corr+alt_est_3o.heir.acc_neu_z);                                  
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_err",
+                              alt_est_3o.alt_err);          
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_alt_c",
+                              alt_est_3o.alt_corr);          
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_vel_c",
+                              alt_est_3o.vel_corr);          
+        mavlink_msg_named_value_float_send(MAV_CH,
+                              timer_now(),
+                              "3o_acc_c",
+                              alt_est_3o.acc_corr);             
+                             
     }
     
     if(timer_check(&last_att_update_time, 50*1000))
@@ -216,15 +251,17 @@ void mavlink_stream(void)
         //                       "corr_all_y",
         //                       att_est_q.heir.corr.y);
 
-        mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "baro_vari",
-                              baro_vari);    
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                       timer_now(),
+        //                       "baro_vari",
+        //                       baro_vari);    
 
-        mavlink_msg_named_value_float_send(MAV_CH,
-                              timer_now(),
-                              "baro_vel",
-                              baro_vel);                                                   
+        // mavlink_msg_named_value_float_send(MAV_CH,
+        //                       timer_now(),
+        //                       "baro_vel",
+        //                       baro_vel);       
+
+     
     }
 }
 

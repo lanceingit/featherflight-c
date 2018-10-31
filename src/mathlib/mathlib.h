@@ -1,6 +1,8 @@
 #pragma once
 
 #include "fifo.h"
+#include "dcm.h"
+#include "vector.h"
 
 #ifndef M_PI
 #define M_PI			3.14159265
@@ -38,3 +40,6 @@ float press2alt(float p);
 
 void variance_create(struct variance_s* v, uint8_t size);
 float variance_cal(struct variance_s* v, float val);
+
+Vector rotation_ef(Dcm r, Vector* b);
+Vector rotation_bf(Dcm r, Vector* e);

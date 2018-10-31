@@ -62,7 +62,7 @@ VPATH += src/driver src/modules src/link src/utils src/config src/param src/math
 #VPATH += src/kernel/FreeRTOS src/kernel/FreeRTOS/portable/MemMang src/kernel/FreeRTOS/portable/Common \
 #         src/kernel/FreeRTOS/portable/GCC/ARM_CM4F   
 #VPATH += src/utils/libcxx
-VPATH += src/pilot src/pilot/navigator
+VPATH += src/pilot src/pilot/navigator src/pilot/estimator
 
 
 ############### Source files configuration ################
@@ -91,10 +91,13 @@ PROJ_OBJ += scheduler.o
 PROJ_OBJ += link_mavlink.o link_wwlink.o 
 
 #pilot
-PROJ_OBJ += att_est_q.o att_est_cf.o est.o mixer.o commander.o att_control.o sensor.o 
+PROJ_OBJ += est.o mixer.o commander.o att_control.o sensor.o navigator.o
+
+#estimator
+PROJ_OBJ += att_est_q.o att_est_cf.o alt_est_3o.o
 
 #navgator
-PROJ_OBJ += navigator.o stabilize.o
+PROJ_OBJ += stabilize.o
 
 
 #mathlib
@@ -117,7 +120,7 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 
 INCLUDES  = -Isrc -Isrc/config
 INCLUDES += -Isrc/bsp -Isrc/driver \
-			-Isrc/pilot -Isrc/pilot/navigator \
+			-Isrc/pilot -Isrc/pilot/navigator -Isrc/pilot/estimator\
 		    -Isrc/modules -Isrc/link -Isrc/mathlib -Isrc/utils -Isrc/param 
 INCLUDES += -I$(MAVLINKLIB) -I$(MAVLINKLIB)/common -Isrc/link/wwlink
 #INCLUDES += -I$(LIB)/STM32F30x_StdPeriph_Driver/inc

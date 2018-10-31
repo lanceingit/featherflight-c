@@ -12,6 +12,7 @@ struct est_s
     //method
     init_func* init;
     run_func* run;    
+	times_t last_time;
 };
 
 #define SPIN_RATE_LIMIT    0.175f
@@ -25,7 +26,6 @@ struct att_est_s
     bool valid;
 
     bool use_compass;
-	times_t last_time;
 	float dt_max;
 
     Vector acc;
@@ -82,16 +82,16 @@ struct alt_est_s
 	float alt;		//U
 	float vel;
 
-    float acc_ned_z;
-    float bias;
+    float acc_neu_z;
 
 	float epv;
 	bool valid;
 
-	float terrain_alt;
+	float ref_alt;
+    bool ref_inited;
 };
 
-void att_est_register(struct att_est_s* att);
+void att_est_register(struct att_est_s* est);
 float att_get_roll(void);
 float att_get_pitch(void);
 float att_get_yaw(void);
@@ -101,12 +101,14 @@ float att_get_yaw_rate(void);
 bool att_valid(void);
 void att_get_dcm(Dcm r);
 
-void alt_est_register(struct alt_est_s* att);
+void alt_est_register(struct alt_est_s* est);
 float alt_est_get_alt(void);
 float alt_est_get_vel(void);
 
 void est_init(void);
 void est_att_run(void);
+void est_alt_run(void);
 
 #include "att_est_q.h"
 #include "att_est_cf.h"
+#include "alt_est_3o.h"

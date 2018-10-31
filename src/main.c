@@ -31,6 +31,7 @@ struct task_s imu_task;
 struct task_s compass_task;
 struct task_s baro_task;
 struct task_s att_task;
+struct task_s alt_task;
 struct task_s commander_task;
 struct task_s navigator_task;
 
@@ -100,6 +101,11 @@ void task_att(void)
 	}
 }
 
+void task_alt(void)
+{
+    est_alt_run();
+}
+
 void task_commander(void)
 {
     commander_update();
@@ -151,6 +157,7 @@ int main()
 
     att_est_register(&att_est_q.heir);
 //    att_est_register(&att_est_cf.heir);
+    alt_est_register(&alt_est_3o.heir);
     est_init();
     perf_init(&main_perf);
     perf_init(&att_perf);
@@ -163,6 +170,7 @@ int main()
 //    task_create(&compass_task, (10000000 / 150), task_compass);
     task_create(&baro_task, 25000, task_baro);
     task_create(&att_task, 1000, task_att);
+    task_create(&alt_task, 10*1000, task_alt);
     task_create(&commander_task, 1000, task_commander);
     task_create(&navigator_task, 1000, task_navigator);
     task_create(&link_task, 2*1000, task_link);

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string.h>
+#include <stdlib.h>
+
 typedef void (*shell_func)(int argc, char *argv[]);      
      
 void cli_init(void);     

@@ -113,12 +113,12 @@ bool att_est_q_run(float dt)
 		return att_est_q_init();
 	}
 
-	this->heir.acc.x = lpf2p_apply(&this->acc_filter_x, this->heir.acc.x);
-	this->heir.acc.y = lpf2p_apply(&this->acc_filter_y, this->heir.acc.y);
-	this->heir.acc.z = lpf2p_apply(&this->acc_filter_z, this->heir.acc.z);
-	this->heir.gyro.x = lpf2p_apply(&this->gyro_filter_x, this->heir.gyro.x);
-	this->heir.gyro.y = lpf2p_apply(&this->gyro_filter_y, this->heir.gyro.y);
-	this->heir.gyro.z = lpf2p_apply(&this->gyro_filter_z, this->heir.gyro.z);
+	// this->heir.acc.x = lpf2p_apply(&this->acc_filter_x, this->heir.acc.x);
+	// this->heir.acc.y = lpf2p_apply(&this->acc_filter_y, this->heir.acc.y);
+	// this->heir.acc.z = lpf2p_apply(&this->acc_filter_z, this->heir.acc.z);
+	// this->heir.gyro.x = lpf2p_apply(&this->gyro_filter_x, this->heir.gyro.x);
+	// this->heir.gyro.y = lpf2p_apply(&this->gyro_filter_y, this->heir.gyro.y);
+	// this->heir.gyro.z = lpf2p_apply(&this->gyro_filter_z, this->heir.gyro.z);
 
 
 	Quaternion q_last = this->heir.q;

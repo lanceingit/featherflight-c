@@ -12,7 +12,7 @@ struct alt_est_3o_s
     float vel_corr;
     float acc_corr;
     float alt_err;
-    float pos_base;
+    float pos_predict;
 };
 
 extern struct alt_est_3o_s alt_est_3o;

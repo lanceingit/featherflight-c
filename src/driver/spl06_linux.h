@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sensor.h"
+#include "timer.h"
 
 struct spl06_cali_s
 {
@@ -30,6 +31,7 @@ struct spl06_linux_s
     struct baro_s heir;
     int fd;
     struct spl06_report_s report;
+    times_t last_time;
 }; 
 
 extern struct spl06_linux_s spl06_linux;

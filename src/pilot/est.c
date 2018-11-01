@@ -166,7 +166,7 @@ void est_alt_run(void)
 		return;
 	}
 
-	float dt = timer_get_dt(&est_alt->heir.last_time, 0.1f, 0.00001f);
+	float dt = timer_get_dt(&est_alt->heir.last_time, 0.02f, 0.001f);
 
 	est_alt->heir.run(dt);
 }

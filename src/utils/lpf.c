@@ -74,3 +74,8 @@ float lpf1p_apply(struct lpf1p_s* filter, float sample)
     return filter->state;    
 }
 
+float lpfrc_apply(float last, float in, float k)
+{
+	return ((last * k) + (in * (1.0f - k)));
+}
+

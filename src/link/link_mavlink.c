@@ -152,7 +152,7 @@ void mavlink_stream(void)
                                imu_get_acc_x(0), imu_get_acc_y(0), imu_get_acc_z(0),
                                imu_get_gyro_x(0)*M_RAD_TO_DEG,imu_get_gyro_y(0)*M_RAD_TO_DEG,imu_get_gyro_z(0)*M_RAD_TO_DEG,
                                compass_get_mag_x(0), compass_get_mag_y(0), compass_get_mag_z(0),
-                               baro_get_press(0), 0, baro_get_altitude(0), baro_get_temp(0),
+                               baro_get_press(0), (alt_est_3o.heir.ref_inited? baro_get_altitude_smooth(0)-alt_est_3o.heir.ref_alt:0), baro_get_altitude(0), baro_get_temp(0),
                                0xFFFF);
 
         // Vector v;
@@ -189,7 +189,7 @@ void mavlink_stream(void)
         mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
                               "3o_acc_u",
-                              alt_est_3o.acc_corr+alt_est_3o.heir.acc_neu_z);                                  
+                              alt_est_3o.heir.acc_neu_z - alt_est_3o.acc_corr);                                  
         mavlink_msg_named_value_float_send(MAV_CH,
                               timer_now(),
                               "3o_err",

@@ -30,7 +30,7 @@ void alt_est_3o_reset(void)
     this->acc_corr = 0.0f;
     this->vel_corr = 0.0f;
     this->alt_corr = 0.0f;    
-    this->pos_base = 0.0f;
+    this->pos_predict = 0.0f;
 }
 
 bool alt_est_3o_init(void)
@@ -41,7 +41,7 @@ bool alt_est_3o_init(void)
     this->k1 = 3.0f / time_constant;
     this->k2 = 3.0f / (time_constant*time_constant);
     this->k3 = 1.0f / (time_constant*time_constant*time_constant);
-    PRINT("k1:%f k2:%f k3:%f\n", this->k1, this->k2, this->k3);
+    PRINT("k1:%f k2:%f k3:%f\n", (double)this->k1, (double)this->k2, (double)this->k3);
     alt_est_3o_reset();
     this->heir.inited = true;
 
@@ -59,19 +59,22 @@ bool alt_est_3o_run(float dt)
 
     acc.z += CONSTANTS_ONE_G;
 
-    this->heir.acc_neu_z = -acc.z;
+    //ned -> neu
+    acc.z = -acc.z;
 
-    this->alt_err = baro_get_altitude(0) - (this->heir.alt + this->heir.ref_alt);
+    this->alt_err = baro_get_altitude_smooth(0) - (this->heir.alt + this->heir.ref_alt);
 
     this->acc_corr += this->alt_err * this->k3 * dt;
-    this->vel_corr += this->alt_err * this->k2 * dt;
+    this->vel_corr = this->alt_err * this->k2 * dt;
     this->alt_corr += this->alt_err * this->k1 * dt;
 
-    float vel_inc = (this->heir.acc_neu_z + this->acc_corr) * dt;
-    this->heir.vel = this->vel_corr;
-    this->pos_base += (this->heir.vel + vel_inc*0.5f) * dt;
-    this->heir.alt = this->pos_base + this->alt_corr;
-    this->heir.vel += vel_inc;
+    this->heir.acc_neu_z = acc.z + this->acc_corr;
+    this->heir.vel += this->vel_corr; 
+    float vel_predict = this->heir.acc_neu_z * dt;
+    this->pos_predict += (this->heir.vel + vel_predict*0.5f) * dt;
+
+    this->heir.alt = this->pos_predict + this->alt_corr;
+    this->heir.vel += vel_predict;
 
     this->heir.valid = true;
 

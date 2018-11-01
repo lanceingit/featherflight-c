@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "commander.h"
 #include "debug.h"
+#include "lpf.h"
 
 #define INS_MAX		3
 
@@ -106,8 +107,10 @@ void imu_update(uint8_t ins)
 	imu_gyro_cal(ins);
     gyro = vector_sub(gyro, imu[ins]->gyro_offset);
 
-	imu[ins]->gyro.x = lpf2p_apply(&imu[ins]->gyro_filter_x, gyro.x);
-	imu[ins]->gyro.y = lpf2p_apply(&imu[ins]->gyro_filter_y, gyro.y);
+	imu[ins]->gyro.x = gyro.x;
+	imu[ins]->gyro.y = gyro.y;
+	// imu[ins]->gyro.x = lpf2p_apply(&imu[ins]->gyro_filter_x, gyro.x);
+	// imu[ins]->gyro.y = lpf2p_apply(&imu[ins]->gyro_filter_y, gyro.y);
 	imu[ins]->gyro.z = lpf2p_apply(&imu[ins]->gyro_filter_z, gyro.z);
 
 	imu[ins]->is_update = true;
@@ -255,6 +258,7 @@ void baro_update(uint8_t ins)
 {
 	if(ins >= baro_cnt) return;
 	baro[ins]->update();
+	baro[ins]->altitude_smooth = lpfrc_apply(baro[ins]->altitude_smooth, baro[ins]->altitude, 0.7f);
 }
 
 float baro_get_press(uint8_t ins)
@@ -269,28 +273,28 @@ float baro_get_altitude(uint8_t ins)
 	return baro[ins]->altitude;
 }
 
+float baro_get_altitude_smooth(uint8_t ins)
+{
+	if(ins >= baro_cnt) return 0;
+	return baro[ins]->altitude_smooth;
+}
+
 float baro_get_temp(uint8_t ins)
 {
 	if(ins >= baro_cnt) return 0;
 	return baro[ins]->temperature;
 }
 
-// float baro_get_vel(uint8_t ins)
-// {
-// 	if(ins >= baro_cnt) return 0;
-// 	return baro[ins]->vel;
-// }
-
 void sensor_init(void)
 {
 	uint8_t i;
 	for(i=0; i<imu_cnt; i++) {
-		lpf2p_init(&imu[i]->acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-		lpf2p_init(&imu[i]->acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-		lpf2p_init(&imu[i]->acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_DEFAULT_DRIVER_FILTER_FREQ);
-		lpf2p_init(&imu[i]->gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-		lpf2p_init(&imu[i]->gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
-		lpf2p_init(&imu[i]->gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_DEFAULT_DRIVER_FILTER_FREQ);
+		lpf2p_init(&imu[i]->acc_filter_x, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_XY_DEFAULT_FILTER_FREQ);
+		lpf2p_init(&imu[i]->acc_filter_y, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_XY_DEFAULT_FILTER_FREQ);
+		lpf2p_init(&imu[i]->acc_filter_z, MPU6050_ACCEL_DEFAULT_RATE, MPU6050_ACCEL_Z_DEFAULT_FILTER_FREQ);
+		lpf2p_init(&imu[i]->gyro_filter_x, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_XY_DEFAULT_FILTER_FREQ);
+		lpf2p_init(&imu[i]->gyro_filter_y, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_XY_DEFAULT_FILTER_FREQ);
+		lpf2p_init(&imu[i]->gyro_filter_z, MPU6050_GYRO_DEFAULT_RATE, MPU6050_GYRO_Z_DEFAULT_FILTER_FREQ);
 
 		imu[i]->rotation = INERTIAL_SENSOR_ROTATION;
 		imu[i]->is_update = false;

@@ -4,6 +4,12 @@
 #ifdef F3_EVO
 #include "spi_flash.h"
 #include "mtd.h"
+#elif LINUX
+#include <pthread.h>
+#include <termios.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <sched.h>
 #endif
 #include "log.h"
 #include "link_mavlink.h"
@@ -39,6 +45,59 @@ struct variance_s baro_variance;
 float baro_vari;
 float baro_vel;
 
+#ifdef LINUX
+
+int linux_create_thread(const char *name, int priority, int stack_size, void* entry,void* parameter,int sched_method)
+{
+    int rv;
+    pthread_t task;
+	pthread_attr_t attr;
+	struct sched_param param;
+	
+	rv = pthread_attr_init(&attr);
+    if (rv != 0) {
+		PRINT("platform_create_thread: failed to init thread attrs\n");
+		return rv;
+	}
+	
+	rv = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+	if (rv != 0) {
+		PRINT("platform_create_thread: failed to set inherit sched\n");
+		return rv;
+	}
+
+	rv = pthread_attr_setschedpolicy(&attr, sched_method);
+	if (rv != 0) {
+		PRINT("platform_create_thread: failed to set sched policy\n");
+		return rv;
+	}
+	
+	if(sched_method != SCHED_OTHER){
+		param.sched_priority = priority;
+		rv = pthread_attr_setschedparam(&attr, &param);
+		if (rv != 0) {
+			PRINT("platform_create_thread: failed to set sched param\n");
+			return rv;
+		}
+	}
+	
+	rv = pthread_create(&task, &attr, entry,parameter);
+	if (rv != 0) {
+		if (rv == EPERM) {
+			PRINT("warning: unable to start");
+			rv = pthread_create(&task, NULL, entry, parameter);
+
+			if (rv != 0) {
+				PRINT("platform_create_thread: failed to create thread\n");
+				return (rv < 0) ? rv : -rv;
+			}
+		}else{
+			return rv;
+		}
+	}
+	return 0;
+}
+#endif
 
 void task_link(void)
 {
@@ -126,8 +185,52 @@ void task_navigator(void)
 // 	}
 // }
 
+void gyro_cal(void)         //TODO:put into sensor
+{
+	while(1) {
+		Vector gyro;
+		Vector gyro_sum;
+		Vector accel_start;
+		Vector accel_end;
+		Vector accel_diff;
 
+		imu_update(0);
+		imu_get_acc(0,&accel_start);
+        gyro_sum = vector_set(0,0,0);
+        for(uint8_t i=0; i<50; i++) {
+        	imu_update(0);
+    		imu_get_gyro(0,&gyro);
+            gyro_sum = vector_add(gyro_sum, gyro);
+    		delay_ms(10);
+        }
+        imu_update(0);
+		imu_get_acc(0,&accel_end);
+        accel_diff = vector_sub(accel_start, accel_end);
+		if(vector_length(accel_diff) >  0.2f) continue;
+
+		imu_set_gyro_offset_x(0, gyro_sum.x/50);   
+		imu_set_gyro_offset_y(0, gyro_sum.y/50);
+		imu_set_gyro_offset_z(0, gyro_sum.z/50);
+        
+        return;
+	}
+}
+
+#ifdef LINUX
+int featherflight_thread(void* arvg);
+
+int main()
+{
+    linux_create_thread("featherflight",99,10240,featherflight_thread,NULL,SCHED_FIFO);
+    while(1){
+	    sleep(60);
+    }    
+}
+
+int featherflight_thread(void* arvg)
+#else
 int main() 
+#endif
 {    
 //    PRINT("hello feather flight\n");
 #ifdef F3_EVO    
@@ -155,6 +258,8 @@ int main()
 #endif    
     sensor_init();
 
+    gyro_cal();
+
     att_est_register(&att_est_q.heir);
 //    att_est_register(&att_est_cf.heir);
     alt_est_register(&alt_est_3o.heir);
@@ -166,13 +271,13 @@ int main()
 
     variance_create(&baro_variance, 100);
 
-    task_create(&imu_task, 1000, task_imu);
+    task_create(&imu_task, 2000, task_imu);
 //    task_create(&compass_task, (10000000 / 150), task_compass);
     task_create(&baro_task, 25000, task_baro);
-    task_create(&att_task, 1000, task_att);
-    task_create(&alt_task, 10*1000, task_alt);
-    task_create(&commander_task, 1000, task_commander);
-    task_create(&navigator_task, 1000, task_navigator);
+    task_create(&att_task, 2000, task_att);
+    task_create(&alt_task, 2*1000, task_alt);
+    task_create(&commander_task, 2000, task_commander);
+    task_create(&navigator_task, 2000, task_navigator);
     task_create(&link_task, 2*1000, task_link);
     task_create(&cli_task, 100*1000, task_cli);
 
@@ -182,6 +287,7 @@ int main()
 
         perf_interval(&main_perf);
         // perf_print(&main_perf, "main loop");
+        usleep(100);
     }
     
     return 0;

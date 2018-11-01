@@ -15,6 +15,7 @@ struct spl06_linux_s spl06_linux = {
 		.update = &spl06_linux_update,
 	},
     .fd = -1,
+	.last_time = 0,
 };
 
 static struct spl06_linux_s* this=&spl06_linux;
@@ -54,11 +55,13 @@ void spl06_convert(struct spl06_report_s *rp,float * press,float *temp)
 
 void spl06_linux_update()
 {
-    if(read(this->fd,&this->report,sizeof(this->report)) > 0) {
-        spl06_convert(&this->report, &this->heir.pressure, &this->heir.temperature);
+	if(timer_check(&this->last_time, 40*1000)) {
+		if(read(this->fd,&this->report,sizeof(this->report)) > 0) {
+			spl06_convert(&this->report, &this->heir.pressure, &this->heir.temperature);
 
-        this->heir.altitude = press2alt(this->heir.pressure);
-    }
+			this->heir.altitude = press2alt(this->heir.pressure);
+		}
+	}
 }
 
 

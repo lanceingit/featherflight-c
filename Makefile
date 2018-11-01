@@ -157,7 +157,7 @@ CCFLAGS += $(CFLAGS) -std=gnu99 -lstdc++
 CPPFLAGS += $(CFLAGS) -std=gnu++11
 
 ASFLAGS = $(PROCESSOR) $(INCLUDES)
-LDFLAGS = $(PROCESSOR) -Wl,--gc-sections 
+LDFLAGS = $(PROCESSOR) -Wl,--gc-sections  -lpthread
 
 #LDFLAGS += -T $(LINKER_DIR)/FLASH.ld
 
@@ -172,6 +172,8 @@ DEPS := $(foreach o,$(OBJ),$(BUILD_DIR)/dep/$(o).d)
 
 
 all: gen_param compile size
+
+rebuild: clean all
 
 gen_param:
 	sh ./tools/gen_param.sh
@@ -189,7 +191,6 @@ $(PROG): $(OBJ)
 .c.o:
 	@echo CC $^ -o $@
 	@$(CC) $(CCFLAGS) -c $< -o $(BUILD_DIR)/$@
-
 
 clean:
 	rm -f $(BIN_DIR)/$(PROG).elf $(BIN_DIR)/$(PROG).hex $(BIN_DIR)/$(PROG).px4 \

@@ -48,7 +48,7 @@ struct baro_s
     float temperature;
     float pressure;
     float altitude;
-    // float vel;
+    float altitude_smooth;    
 
     //method
     init_func* init;
@@ -85,6 +85,7 @@ void baro_register(struct baro_s* item);
 void baro_update(uint8_t ins);
 float baro_get_press(uint8_t ins);
 float baro_get_altitude(uint8_t ins);
+float baro_get_altitude_smooth(uint8_t ins);
 float baro_get_temp(uint8_t ins);
 // float baro_get_vel(uint8_t ins);
 

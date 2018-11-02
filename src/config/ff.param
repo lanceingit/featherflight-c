@@ -34,5 +34,13 @@
 },
 "ALT3O":{
 "ALT3O_TIME_CONS":0.5    
+},
+"ALTI":{
+"ALTI_W_POS":0.4,    
+"ALTI_W_VEL":0.2,    
+"ALTI_W_BIAS":0.001,    
+"ALTI_W_C2BIAS":0.1,    
+"ALTI_W_BARO_OFF":0.8,
+"ALTI_BARO_CHECK_V":0.04    
 }
 }

@@ -94,7 +94,7 @@ PROJ_OBJ += link_mavlink.o link_wwlink.o
 PROJ_OBJ += est.o mixer.o commander.o att_control.o sensor.o navigator.o
 
 #estimator
-PROJ_OBJ += att_est_q.o att_est_cf.o alt_est_3o.o
+PROJ_OBJ += att_est_q.o att_est_cf.o alt_est_3o.o alt_est_inav.o
 
 #navgator
 PROJ_OBJ += stabilize.o

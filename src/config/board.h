@@ -3,6 +3,9 @@
 #include "chip.h"
 #include "version.h"
 
+#define MM_HEAP_SIZE        (4*1024)
+#define MM_BYTE_ALIGNMENT  4
+
 #ifdef F3_EVO
 
 #define MPU6050_I2C     I2C1

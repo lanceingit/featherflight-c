@@ -95,3 +95,7 @@ bool alt_est_inav_run(float dt)
     return true;
 }
 
+void alt_est_inav_shell(int argc, char *argv[])
+{
+    
+}

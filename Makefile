@@ -2,6 +2,8 @@
 PROG = ff
 BOARD = LINUX
 
+CMAKE_DIR = cmake
+
 CROSS_COMPILE     ?= ../out/sun8iw8p1/linux/common/buildroot/external-toolchain/bin/arm-linux-gnueabi-
 
 ############### Location configuration ################
@@ -196,5 +198,14 @@ clean:
 	rm -f $(BIN_DIR)/$(PROG).elf $(BIN_DIR)/$(PROG).hex $(BIN_DIR)/$(PROG).px4 \
 	$(BIN_DIR)/$(PROG).bin $(BIN_DIR)/$(PROG).dfu $(BIN_DIR)/$(PROG).map \
 	$(BUILD_DIR)/dep/*.d $(BUILD_DIR)/*.o $(BIN_DIR)/$(PROG)
+
+define cmake-build
+	@cd $(CMAKE_DIR) && cmake .. && $(MAKE)
+endef
+
+cmake:
+	$(call cmake-build)
+
+.PHONY: all clean cmake	
 
 

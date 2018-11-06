@@ -106,7 +106,7 @@ PROJ_OBJ += stabilize.o
 PROJ_OBJ += mathlib.o matrix.o vector.o quaternion.o dcm.o srcdkf.o
 
 # utils
-PROJ_OBJ += fifo.o perf.o
+PROJ_OBJ += fifo.o perf.o mm.o
 PROJ_OBJ += lpf.o pid.o rotation.o
 
 

@@ -25,6 +25,7 @@
 #include "cli.h"
 #include "debug.h"
 #include "navigator.h"
+#include "mm.h"
 
 struct perf_s main_perf;
 struct perf_s att_perf;
@@ -44,6 +45,39 @@ struct task_s navigator_task;
 struct variance_s baro_variance;
 float baro_vari;
 float baro_vel;
+
+
+void mm_test(void)
+{
+    uint8_t* m1=NULL;
+    uint8_t* m2=NULL;
+    uint8_t* m3=NULL;
+
+    mm_print_info();
+
+    m1 = mm_malloc(20);
+    PRINT("m1:%p\n", m1);
+
+    mm_print_info();
+
+    m2 = mm_malloc(100);
+    PRINT("m2:%p\n", m2);
+    mm_print_info();
+
+    m3 = mm_malloc(2000);
+    PRINT("m3:%p\n", m3);
+    mm_print_info();
+
+    mm_free(m1);
+    mm_print_info();
+
+    mm_free(m2);
+    mm_print_info();
+
+    mm_free(m3);
+    mm_print_info();
+}
+
 
 #ifdef LINUX
 
@@ -248,6 +282,9 @@ int main()
      wwlink_init();
      cli_init();
 
+     mm_init();
+     mm_test();
+
 #ifdef F3_EVO    
     imu_register(&mpu6050.heir);
     baro_register(&ms5611.heir);
@@ -278,7 +315,7 @@ int main()
     task_create(&alt_task, 2*1000, task_alt);
     task_create(&commander_task, 2000, task_commander);
     task_create(&navigator_task, 2000, task_navigator);
-    task_create(&link_task, 2*1000, task_link);
+//    task_create(&link_task, 2*1000, task_link);
     task_create(&cli_task, 100*1000, task_cli);
 
     while(1)

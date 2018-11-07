@@ -76,7 +76,7 @@ PROJ_OBJ = main.o
 PROJ_OBJ += timer.o  
 #PROJ_OBJ += serial.o i2c.o spi.o
 #PROJ_OBJ += hmc5883.o mpu6050.o ms5611.o
-PROJ_OBJ += mpu6050_linux.o spl06_linux.o
+PROJ_OBJ += mpu6050_linux.o spl06_linux.o dps280_linux.o
 
 # usb
 #PROJ_OBJ += usb_bsp.o usbd_desc.o usbd_cdc_vcp.o usbd_usr.o
@@ -152,7 +152,7 @@ CFLAGS += -MD -MP -MF $(BUILD_DIR)/dep/$(@).d -MQ $(@)
 #Permits to remove un-used functions and global variables from output file
 #CFLAGS += -ffunction-sections -fdata-sections
 # Prevent promoting floats to doubles
-CFLAGS += -Wdouble-promotion
+#CFLAGS += -Wdouble-promotion
 
 CCFLAGS += $(CFLAGS) -std=gnu99 -lstdc++
 

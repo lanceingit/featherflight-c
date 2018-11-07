@@ -18,6 +18,7 @@
 #include "est.h"
 #include "timer.h"
 #include "mathlib.h"
+#include "debug.h"
 
 
 
@@ -32,7 +33,7 @@ struct serial_s * _port;
 #define UDP_IP    "192.168.100.255"
 static struct sockaddr_in addr;
 static struct sockaddr_in bcast_addr;
-//static struct sockaddr_in remote_addr;
+static struct sockaddr_in remote_addr;
 static int _fd = -1;
 static int addr_len = 0;
 #endif
@@ -112,6 +113,25 @@ bool mavlink_recv(mavlink_message_t* msg)
             return true;
         }
     }
+#elif LINUX 
+    int len = 0;
+    uint16_t check_len = 0;
+    uint8_t buffer[300] = {};
+    bzero(buffer, sizeof(buffer));
+    len = recvfrom(_fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&remote_addr, (socklen_t*)&addr_len);
+
+    if(len > 0) {
+        char* client_ip = inet_ntoa(remote_addr.sin_addr);
+        if(strcmp(client_ip,"192.168.100.1")!=0)
+       	    PRINT("ip:%s port:%d len:%d\n", client_ip, remote_addr.sin_port, len);
+    }
+    if(len > 0) {
+        for(check_len = 0; check_len < len; check_len++) {
+            if(mavlink_parse_char(0, buffer[check_len], msg, &_r_mavlink_status)) {
+                return true;
+            }
+        }
+    }
 #endif
 
 	return false;
@@ -128,15 +148,12 @@ void mavlink_send(mavlink_channel_t chan, const uint8_t *ch, uint16_t length)
     }
 }
 
-static times_t last_heartbeat_update_time = 0;
-static times_t last_sen_update_time = 0;
-static times_t last_att_update_time = 0;
-
 extern float baro_vari;
 extern float baro_vel;
 
 void mavlink_stream(void)
 {
+    TIMER_DEF(last_heartbeat_update_time)
     if(timer_check(&last_heartbeat_update_time, 1000*1000))
     {
         mavlink_msg_heartbeat_send(MAV_CH,
@@ -145,6 +162,7 @@ void mavlink_stream(void)
                                        0, MAV_STATE_STANDBY);  
     }
     
+    TIMER_DEF(last_sen_update_time)
     if(timer_check(&last_sen_update_time, 20*1000))
     {
         mavlink_msg_highres_imu_send(MAV_CH,
@@ -209,6 +227,7 @@ void mavlink_stream(void)
                              
     }
     
+    TIMER_DEF(last_att_update_time)
     if(timer_check(&last_att_update_time, 50*1000))
     {
         mavlink_msg_attitude_send(MAV_CH,

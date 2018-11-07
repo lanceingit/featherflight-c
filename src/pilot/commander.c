@@ -152,11 +152,13 @@ bool check_stick_arm(void)
     static uint8_t status = WAIT_ARM_PRESS;
     bool armed=this->armed;
 
+// PRINT("stick:t:%f y:%f r:%f p:%f\n", this->stick.thrust, this->stick.yaw, this->stick.roll, this->stick.p);
+
     if(status == WAIT_ARM_PRESS) {
         armed = false;
-        if(stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_LEFT|LEFT_STICK_V_CENTER|
+        if(stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_LEFT|LEFT_STICK_DOWN|
                                                                             RIGHT_STICK_RIGHT|RIGHT_STICK_DOWN)
-        || stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_RIGHT|LEFT_STICK_V_CENTER|
+        || stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_RIGHT|LEFT_STICK_DOWN|
                                                                             RIGHT_STICK_LEFT|RIGHT_STICK_DOWN)                                               
         ) {
             if(timer_check(&arm_time, 1500*1000)) {
@@ -175,9 +177,9 @@ bool check_stick_arm(void)
         armed = true;   
     } else if(status == WAIT_DISARM_PRESS) {
         armed = true;
-        if(stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_LEFT|LEFT_STICK_V_CENTER|
+        if(stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_LEFT|LEFT_STICK_DOWN|
                                                                             RIGHT_STICK_RIGHT|RIGHT_STICK_DOWN)
-        || stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_RIGHT|LEFT_STICK_V_CENTER|
+        || stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_RIGHT|LEFT_STICK_DOWN|
                                                                             RIGHT_STICK_LEFT|RIGHT_STICK_DOWN)                                               
         || stick_get_position(&this->stick, STICK_LIMIT, STICK_DEADZONE) == (LEFT_STICK_DOWN|LEFT_STICK_H_CENTER|
                                                                             RIGHT_STICK_H_CENTER|RIGHT_STICK_V_CENTER)                                               

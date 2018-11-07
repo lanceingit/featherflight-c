@@ -205,14 +205,17 @@ void wwlink_send(uint8_t* data, uint16_t len)
 }
 
 
-static times_t last_heartbeat_update_time = 0;
-static times_t last_info_update_time = 0;
+// static times_t last_heartbeat_update_time = 0;
+// static times_t last_info_update_time = 0;
 
 void wwlink_stream(void)
 {
+	TIMER_DEF(last_heartbeat_update_time)
     if(timer_check(&last_heartbeat_update_time, 1000*1000)) {
 		awlink_encode_system_heart(0);
     }
+
+	TIMER_DEF(last_info_update_time)
     if(timer_check(&last_info_update_time, 50*1000)) {
 		wwlink_encode_status_base_info(att_get_roll(), att_get_pitch(), att_get_yaw());
     }

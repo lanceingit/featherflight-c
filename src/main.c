@@ -3,14 +3,15 @@
 #include "sensor.h"
 #ifdef F3_EVO
 #include "spi_flash.h"
-#include "mtd.h"
 #elif LINUX
+#include <unistd.h>
 #include <pthread.h>
 #include <termios.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <sched.h>
 #endif
+#include "mtd.h"
 #include "log.h"
 #include "link_mavlink.h"
 #include "link_wwlink.h"
@@ -27,56 +28,10 @@
 #include "navigator.h"
 #include "mm.h"
 
-struct perf_s main_perf;
-struct perf_s att_perf;
-struct perf_s att_elapsed;
-struct perf_s link_perf;
-
-struct task_s link_task;
-struct task_s cli_task;
-struct task_s imu_task;
-struct task_s compass_task;
-struct task_s baro_task;
-struct task_s att_task;
-struct task_s alt_task;
-struct task_s commander_task;
-struct task_s navigator_task;
 
 struct variance_s baro_variance;
 float baro_vari;
 float baro_vel;
-
-
-void mm_test(void)
-{
-    uint8_t* m1=NULL;
-    uint8_t* m2=NULL;
-    uint8_t* m3=NULL;
-
-    mm_print_info();
-
-    m1 = mm_malloc(20);
-    PRINT("m1:%p\n", m1);
-
-    mm_print_info();
-
-    m2 = mm_malloc(100);
-    PRINT("m2:%p\n", m2);
-    mm_print_info();
-
-    m3 = mm_malloc(2000);
-    PRINT("m3:%p\n", m3);
-    mm_print_info();
-
-    mm_free(m1);
-    mm_print_info();
-
-    mm_free(m2);
-    mm_print_info();
-
-    mm_free(m3);
-    mm_print_info();
-}
 
 
 #ifdef LINUX
@@ -138,8 +93,7 @@ void task_link(void)
 	mavlink_message_t msg;
     wwlink_message_t wwmsg;
 
-	if(mavlink_recv(&msg))
-	{
+	if(mavlink_recv(&msg)) {
         mavlink_log_handle(&msg);
 	}
 
@@ -147,6 +101,7 @@ void task_link(void)
     mavlink_stream();
     wwlink_stream();
 
+    PERF_DEF(link_perf)
     perf_interval(&link_perf);
     // perf_print(&link_perf, "link");
 }
@@ -186,11 +141,15 @@ void task_baro(void)
 void task_att(void)
 {
 	if(imu_is_update(0)) {
+        PERF_DEF(att_elapsed)
 		perf_begin(&att_elapsed);
 		est_att_run();
 		perf_end(&att_elapsed);
+        // perf_print(&att_elapsed, "att_elapsed");
 		imu_clean_update(0);
+        PERF_DEF(att_perf);
 		perf_interval(&att_perf);
+        // perf_print(&att_perf, "att_perf");
 	}
 }
 
@@ -209,15 +168,15 @@ void task_navigator(void)
     navigator_update();
 }
 
-// void task_log(void)
-// {
-// 	if(!mtd_is_full() && log_need_record())
-// 	{
-// 	    log_write_att(50);
-// 	    log_write_imu(500);
-// 	    log_write_sens(50);
-// 	}
-// }
+void task_log(void)
+{
+	if(!mtd_is_full() && log_need_record()) {
+	    log_write_att(50);
+	    log_write_imu(500);
+	    log_write_sens(50);
+	}
+    mtd_sync();
+}
 
 void gyro_cal(void)         //TODO:put into sensor
 {
@@ -271,19 +230,17 @@ int main()
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
     RCC_ClearFlag();
 #endif        
+    mm_init();
     timer_init();    
 #ifdef F3_EVO    
     spi_flash_init();
+#endif        
     mtd_init();
     mtd_test();
-#endif        
-    // log_init();
-     mavlink_init();
-     wwlink_init();
-     cli_init();
-
-     mm_init();
-     mm_test();
+    log_init();
+    mavlink_init();
+    wwlink_init();
+    cli_init();
 
 #ifdef F3_EVO    
     imu_register(&mpu6050.heir);
@@ -291,8 +248,9 @@ int main()
     compass_register(&hmc5883.heir);
 #elif LINUX
     imu_register(&mpu6050_linux.heir);
-    baro_register(&spl06_linux.heir);
+    // baro_register(&spl06_linux.heir);
 #endif    
+    task_init();
     sensor_init();
 
     gyro_cal();
@@ -301,27 +259,25 @@ int main()
 //    att_est_register(&att_est_cf.heir);
     alt_est_register(&alt_est_3o.heir);
     est_init();
-    perf_init(&main_perf);
-    perf_init(&att_perf);
-    perf_init(&link_perf);
-    perf_init(&att_elapsed);
 
     variance_create(&baro_variance, 100);
 
-    task_create(&imu_task, 2000, task_imu);
-//    task_create(&compass_task, (10000000 / 150), task_compass);
-    task_create(&baro_task, 25000, task_baro);
-    task_create(&att_task, 2000, task_att);
-    task_create(&alt_task, 2*1000, task_alt);
-    task_create(&commander_task, 2000, task_commander);
-    task_create(&navigator_task, 2000, task_navigator);
-//    task_create(&link_task, 2*1000, task_link);
-    task_create(&cli_task, 100*1000, task_cli);
+    task_create("imu", 2000, task_imu);
+//    task_create("compass", (10000000 / 150), task_compass);
+    task_create("baro", 25000, task_baro);
+    task_create("att", 2000, task_att);
+    task_create("alt", 2*1000, task_alt);
+    task_create("cmder", 2000, task_commander);
+    task_create("nav", 2000, task_navigator);
+    task_create("link", 2*1000, task_link);
+    task_create("cli", 100*1000, task_cli);
+    task_create("log", 20*1000, task_log);
 
     while(1)
     {
         scheduler_run();
 
+        PERF_DEF(main_perf)
         perf_interval(&main_perf);
         // perf_print(&main_perf, "main loop");
         usleep(100);

@@ -28,32 +28,6 @@ static struct block_s start, *end = NULL;
 static size_t remaining = 0U;
 
 
-#if USE_MM == MM_MODULE_STATIC
-
-void* mm_malloc(uint8_t s)
-{
-    void* m = NULL;
-
-    if(s == 0) return m;
-
-    if(s & BYTE_ALIGNMENT_MASK ) {
-        s += ( MM_BYTE_ALIGNMENT - ( s & BYTE_ALIGNMENT_MASK ) );
-    }
-
-    if(((mm_used+s) < MM_HEAP_SIZE)) {
-        m = heap + mm_used;
-        mm_used += s;
-    }    
-
-    return m;
-}
-
-void mm_free(void* m)
-{
-
-}
-
-#elif USE_MM == MM_MODULE_DYNAMIC_ADDR
 void mm_init(void)
 {
     size_t addr;
@@ -76,12 +50,21 @@ void mm_init(void)
     remaining = first->size;
 }
 
-void* mm_malloc(uint8_t s)
+void* mm_malloc(uint32_t s)
 {
-    struct block_s *curr, *prev, *new;
-    void *m = NULL;
-
+    void* m = NULL;
     if(s == 0) return m;
+#if USE_MM == MM_MODULE_STATIC
+    if(s & BYTE_ALIGNMENT_MASK ) {
+        s += ( MM_BYTE_ALIGNMENT - ( s & BYTE_ALIGNMENT_MASK ) );
+    }
+
+    if(((mm_used+s) < MM_HEAP_SIZE)) {
+        m = heap + mm_used;
+        mm_used += s;
+    }    
+#elif USE_MM == MM_MODULE_DYNAMIC_ADDR
+    struct block_s *curr, *prev, *new;
 
     s += BLOCK_STRUCT_SIZE;
     if((s & BYTE_ALIGNMENT_MASK ) != 0x00 ) {
@@ -116,11 +99,18 @@ void* mm_malloc(uint8_t s)
             remaining -= curr->size;
         }
     }
-    return m;    
+#elif MM_USE == MM_MODULE_DYNAMIC_SIZE
+#else
+    #error "must select one mm module"
+#endif
+
+    return m;
 }
 
 void mm_free(void* m)
 {
+#if USE_MM == MM_MODULE_STATIC
+#elif USE_MM == MM_MODULE_DYNAMIC_ADDR
     struct block_s *block;
     struct block_s *iterator;
 
@@ -151,6 +141,10 @@ void mm_free(void* m)
             } 
         }
 	}
+#elif MM_USE == MM_MODULE_DYNAMIC_SIZE
+#else
+    #error "must select one mm module"
+#endif
 }
 
 void mm_print_info(void)
@@ -163,8 +157,4 @@ void mm_print_info(void)
     }
     PRINT("--------------------------\n");
 }
-#elif MM_USE == MM_MODULE_DYNAMIC_SIZE
-#else
-    #error "must select one mm module"
-#endif
 

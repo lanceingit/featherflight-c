@@ -4,12 +4,17 @@
 #include "mtd.h"
 #ifdef F3_EVO
 #include "spi_flash.h"
+#elif LINUX
+#include <fcntl.h>
+#include <unistd.h>
+#include "timer.h"
 #endif
 #include "fifo.h"
 
 
 #define BUF_SIZE 4096
 
+#ifdef F3_EVO
 enum mtd_status
 {
 	MTD_ERASE,
@@ -17,33 +22,37 @@ enum mtd_status
 	MTD_PROGRAM_CONTINUE,
 	MTD_IDLE,
 };
+static uint8_t page_buf[M25P16_PAGESIZE];
+static uint32_t read_addr;
+static enum mtd_status status;
+static bool has_erase;
+#elif LINUX
+#define FILE_SIZE_MAX (15*1024*1024)
+
+static int mtd_fd = -1;
+static uint8_t page_buf[BUF_SIZE];
+#endif
 
 static struct fifo_s write_fifo;
 static uint8_t buf[BUF_SIZE];
-#ifdef F3_EVO
-static uint8_t page_buf[M25P16_PAGESIZE];
-#elif LINUX
-#else
-static uint8_t page_buf[100];
-#endif
 
 static uint32_t write_addr;
-static uint32_t read_addr;
 
-static enum mtd_status status;
-
-static bool has_erase;
 static bool full;
 
 
 void mtd_init()
 {
+	fifo_create(&write_fifo, buf, BUF_SIZE);
+#ifdef F3_EVO	
 	write_addr = 0;
 	read_addr = 0;
 	status = MTD_IDLE;
 	has_erase = false;
 	full = false;
-	fifo_create(&write_fifo, buf, BUF_SIZE);
+#elif LINUX
+	mtd_fd = open("/tmp/file.mtd",O_RDWR | O_CREAT | O_TRUNC);
+#endif	
 }
 
 void mtd_test()
@@ -75,16 +84,12 @@ void mtd_test()
 
 void mtd_write(uint8_t* data, uint16_t len)
 {
-	if(mtd_get_space() > len)
-	{
-		for(uint16_t i=0; i<len; i++)
-		{
+	if(mtd_get_space() > len) {
+		for(uint16_t i=0; i<len; i++) {
 			fifo_write(&write_fifo, data[i]);
 		}
 		full = false;
-	}
-	else
-	{
+	} else {
 		full = true;
 	}
 }
@@ -99,6 +104,8 @@ uint16_t mtd_read(uint32_t offset, uint8_t* data, uint16_t len)
 	if(read_addr == write_addr) read_addr = 0;
 
 	return read_len;
+#elif LINUX	
+	return read(mtd_fd, data, len);
 #else 
 	return 0;	
 #endif	
@@ -166,6 +173,21 @@ void mtd_sync()
             status = MTD_IDLE;
 		}
 	}
+#elif LINUX
+	if(mtd_fd > 0) {
+		uint16_t len = fifo_get_count(&write_fifo);
+		if(len > BUF_SIZE-100) {
+			for(uint16_t i=0; i<len; i++) {
+				fifo_read(&write_fifo, &page_buf[i]);
+			}
+			write_addr += write(mtd_fd, page_buf, len);
+		}
+
+		TIMER_DEF(last_sync_time)
+		if(timer_check(&last_sync_time, 500*1000)) {
+			fsync(mtd_fd);
+		}
+	}
 #endif	
 }
 
@@ -173,6 +195,8 @@ uint32_t mtd_get_space()
 {
 #ifdef F3_EVO	
 	return spi_flash_getGeometry()->totalSize - write_addr;
+#elif LINUX
+	return FILE_SIZE_MAX - write_addr;
 #else 
 	return 0;
 #endif		

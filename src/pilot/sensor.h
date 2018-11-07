@@ -98,4 +98,5 @@ void sensor_init(void);
 #elif LINUX
 #include "mpu6050_linux.h"
 #include "spl06_linux.h"
+#include "dps280_linux.h"
 #endif

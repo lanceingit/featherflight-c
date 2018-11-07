@@ -70,7 +70,7 @@ void log_write_imu(uint16_t rate)
     struct log_IMU_s pkt = {
     	LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
 		.acc_x = imu_get_acc_x(0),
-		.acc_y = imu_get_acc_x(0),
+		.acc_y = imu_get_acc_y(0),
 		.acc_z = imu_get_acc_z(0),
 		.gyro_x = imu_get_gyro_x(0),
 		.gyro_y = imu_get_gyro_y(0),
@@ -78,8 +78,8 @@ void log_write_imu(uint16_t rate)
 		.mag_x = compass_get_mag_x(0),
 		.mag_y = compass_get_mag_y(0),
 		.mag_z = compass_get_mag_z(0),
-		.temp_acc = 0.0f,
-		.temp_gyro = 0.0f,
+		.temp_acc = imu_get_temp(0),
+		.temp_gyro = imu_get_temp(0),
 		.temp_mag = 0.0f,
     };
     if(timer_check(&timer[LOG_IMU_MSG], 1*1000*1000/rate))

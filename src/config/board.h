@@ -36,6 +36,7 @@
 #define MPU6050_GYRO_Z_DEFAULT_FILTER_FREQ		45
 
 #define SPL06_PATH "/dev/spl06"
+#define DPS280_PATH "/dev/dps280"
 
 #endif
 

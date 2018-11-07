@@ -307,7 +307,16 @@ void sensor_init(void)
 	for(i=0; i<compass_cnt; i++) {
 		compass[i]->init();
 	}
+
+#ifdef LINUX
+	if(spl06_linux_init()) {
+		baro_register(&spl06_linux.heir);
+	} else if(dps280_linux_init()) {
+		baro_register(&dps280_linux.heir);
+	}
+#else
 	for(i=0; i<baro_cnt; i++) {
 		baro[i]->init();	
 	}
+#endif	
 }

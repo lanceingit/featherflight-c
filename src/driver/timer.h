@@ -10,6 +10,8 @@
 
 typedef uint64_t times_t;
 
+#define TIMER_DEF(name) static times_t name = 0;
+
 void timer_init(void);
 void timer_disable(void);
 

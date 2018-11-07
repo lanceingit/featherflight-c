@@ -2,6 +2,16 @@
 
 #include "timer.h"
 
+#define PERF_DEF(name) static struct perf_s name = { \
+    .t0 = 0, \
+    .t1 = 0, \
+    .cnt = 0, \
+    .avg = 0, \
+    .sum = 0, \
+    .t_max = 0, \
+    .t_min = 0xFFFFFFFF, \
+};
+
 struct perf_s
 {
     times_t t0;

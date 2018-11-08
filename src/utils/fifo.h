@@ -52,7 +52,7 @@ void fifo_set_tail(struct fifo_s *fifo, uint8_t* new_tail);
 
 uint16_t fifo_get_tail_index(struct fifo_s *fifo);
 void fifo_set_tail_index(struct fifo_s *fifo, uint16_t new_index);
-
+void fifo_print(struct fifo_s *fifo);
 
 void fifo_f_create(struct fifo_f_s *fifo, float *buf, uint16_t size);
 int8_t fifo_f_write(struct fifo_f_s *fifo, float c);

@@ -27,11 +27,33 @@
 #include "debug.h"
 #include "navigator.h"
 #include "mm.h"
+#include "fifo.h"
 
 
 struct variance_s baro_variance;
 float baro_vari;
 float baro_vel;
+
+
+void fifo_test(void)
+{
+    struct fifo_s f;
+    uint8_t buf[10];
+    uint8_t i,j;
+    uint8_t tmp=0;
+    
+
+    fifo_create(&f, buf, 10);
+
+    for(i=0; i<3; i++) {
+        for(j=0; j<7; j++) {
+            fifo_write(&f, j);
+        }
+        for(j=0; j<9; j++) {
+            fifo_read(&f, &tmp);
+        }
+    }
+}
 
 
 #ifdef LINUX
@@ -98,8 +120,8 @@ void task_link(void)
 	}
 
     wwlink_recv(&wwmsg);    
-    mavlink_stream();
-    wwlink_stream();
+    // mavlink_stream();
+    // wwlink_stream();
 
     PERF_DEF(link_perf)
     perf_interval(&link_perf);
@@ -170,12 +192,7 @@ void task_navigator(void)
 
 void task_log(void)
 {
-	if(!mtd_is_full() && log_need_record()) {
-	    log_write_att(50);
-	    log_write_imu(500);
-	    log_write_sens(50);
-	}
-    mtd_sync();
+    log_run();    
 }
 
 void gyro_cal(void)         //TODO:put into sensor
@@ -255,6 +272,8 @@ int main()
 
     gyro_cal();
 
+    fifo_test();
+
     att_est_register(&att_est_q.heir);
 //    att_est_register(&att_est_cf.heir);
     alt_est_register(&alt_est_3o.heir);
@@ -273,14 +292,23 @@ int main()
     task_create("cli", 100*1000, task_cli);
     task_create("log", 20*1000, task_log);
 
-    while(1)
-    {
-        scheduler_run();
+    while(1) {
 
-        PERF_DEF(main_perf)
-        perf_interval(&main_perf);
+        TIMER_DEF(main_loop_time)
+        float dt = timer_get_dt(&main_loop_time, 10, 0.000001);
+        if(dt < 1.0f) {
+            scheduler_run();
+        }
+        times_t main_elapsed = timer_elapsed(&main_loop_time);
+		if(main_elapsed>SYSTEM_CYCLE || dt>(0.001+SYSTEM_CYCLE/1e6)) {
+			PRINT("warning slow loop:%3.3fms, elapsed:%3.3fms", dt*1000, main_elapsed/1000.0f);
+			main_elapsed = SYSTEM_CYCLE - 500;
+		}
+		usleep(SYSTEM_CYCLE - main_elapsed);        
+
+        // PERF_DEF(main_perf)
+        // perf_interval(&main_perf);
         // perf_print(&main_perf, "main loop");
-        usleep(100);
     }
     
     return 0;

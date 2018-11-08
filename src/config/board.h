@@ -24,6 +24,12 @@
 
 #elif LINUX
 
+#define SYSTEM_CYCLE              (2*1000)
+
+#define MTD_FILE_SIZE_MAX (24*1024)
+#define MTD_PATH "/tmp/file.mtd"
+
+
 #define MPU6050_PATH "/dev/mpu6050"
 #define INERTIAL_SENSOR_ROTATION    ROTATION_ROLL_180_YAW_90
 

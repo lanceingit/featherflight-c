@@ -22,10 +22,15 @@ struct block_s
 #define BLOCK_SIZE_MIN	       ((size_t)(BLOCK_STRUCT_SIZE << 1))
 
 static uint8_t heap[MM_HEAP_SIZE] __attribute__((aligned(4)));
-static size_t mm_used = 0;
 
-static struct block_s start, *end = NULL;
-static size_t remaining = 0U;
+#if USE_MM == MM_MODULE_STATIC
+    static size_t mm_used = 0;
+
+#elif USE_MM == MM_MODULE_DYNAMIC_ADDR
+    static struct block_s start, *end = NULL;
+    static size_t remaining = 0U;
+    
+#endif
 
 
 void mm_init(void)

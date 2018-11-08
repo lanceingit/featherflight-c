@@ -163,7 +163,7 @@ void mavlink_stream(void)
     }
     
     TIMER_DEF(last_sen_update_time)
-    if(timer_check(&last_sen_update_time, 20*1000))
+    if(timer_check(&last_sen_update_time, 30*1000))
     {
         mavlink_msg_highres_imu_send(MAV_CH,
                                timer_now(),
@@ -228,7 +228,7 @@ void mavlink_stream(void)
     }
     
     TIMER_DEF(last_att_update_time)
-    if(timer_check(&last_att_update_time, 50*1000))
+    if(timer_check(&last_att_update_time, 100*1000))
     {
         mavlink_msg_attitude_send(MAV_CH,
                                timer_now(), 

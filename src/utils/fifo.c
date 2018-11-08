@@ -11,6 +11,7 @@
 #include "board.h"
 
 #include "fifo.h"
+#include "debug.h"
 
 
 
@@ -101,6 +102,9 @@ void fifo_create(struct fifo_s *fifo, uint8_t *buf, uint16_t size)
 
 int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
 {
+    // PRINT("fifo_write");
+    // fifo_print(fifo);
+
     if(fifo->head + 1 == fifo->tail)
     {
         return -1;
@@ -138,8 +142,12 @@ void fifo_write_force(struct fifo_s *fifo, uint8_t c)
 
 int8_t fifo_read(struct fifo_s *fifo, uint8_t* c)
 {
+    // PRINT("fifo_read");
+    // fifo_print(fifo);
+
     if(fifo->head == fifo->tail)
     {
+        fifo->cnt = 0;
         return -1;
     }
 
@@ -221,4 +229,20 @@ void fifo_set_tail(struct fifo_s *fifo, uint8_t* new_tail)
     {
         fifo->tail = fifo->head;
     }
+}
+
+void fifo_print(struct fifo_s *fifo)
+{
+    PRINT("-------fifo--------\n");
+    PRINT("addr:%p\n", fifo);
+    PRINT("head:%u\n", fifo->head);
+    PRINT("tail:%u\n", fifo->tail);
+    PRINT("data:");
+    for(uint8_t i=0; i<10; i++) {
+        PRINT("%x ", fifo->data[i]);
+    }
+    PRINT("\n");
+    PRINT("size:%u\n", fifo->size);
+    PRINT("cnt:%u\n", fifo->cnt);
+    PRINT("-------------------\n");
 }

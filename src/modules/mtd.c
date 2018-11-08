@@ -10,6 +10,7 @@
 #include "timer.h"
 #endif
 #include "fifo.h"
+#include "debug.h"
 
 
 #define BUF_SIZE 4096
@@ -27,8 +28,6 @@ static uint32_t read_addr;
 static enum mtd_status status;
 static bool has_erase;
 #elif LINUX
-#define FILE_SIZE_MAX (15*1024*1024)
-
 static int mtd_fd = -1;
 static uint8_t page_buf[BUF_SIZE];
 #endif
@@ -40,18 +39,20 @@ static uint32_t write_addr;
 
 static bool full;
 
+void mtd_shell(int argc, char *argv[]);
 
 void mtd_init()
 {
+	cli_regist("mtd", mtd_shell);
 	fifo_create(&write_fifo, buf, BUF_SIZE);
-#ifdef F3_EVO	
 	write_addr = 0;
+	full = false;
+#ifdef F3_EVO	
 	read_addr = 0;
 	status = MTD_IDLE;
 	has_erase = false;
-	full = false;
 #elif LINUX
-	mtd_fd = open("/tmp/file.mtd",O_RDWR | O_CREAT | O_TRUNC);
+	mtd_fd = open(MTD_PATH,O_RDWR | O_CREAT | O_TRUNC);
 #endif	
 }
 
@@ -84,13 +85,16 @@ void mtd_test()
 
 void mtd_write(uint8_t* data, uint16_t len)
 {
+	PRINT("space:%u len:%u ", mtd_get_space(), len);
 	if(mtd_get_space() > len) {
 		for(uint16_t i=0; i<len; i++) {
 			fifo_write(&write_fifo, data[i]);
 		}
 		full = false;
+		PRINT("free\n");
 	} else {
 		full = true;
+		PRINT("full\n");
 	}
 }
 
@@ -196,7 +200,11 @@ uint32_t mtd_get_space()
 #ifdef F3_EVO	
 	return spi_flash_getGeometry()->totalSize - write_addr;
 #elif LINUX
-	return FILE_SIZE_MAX - write_addr;
+	if(MTD_FILE_SIZE_MAX > write_addr) {
+		return MTD_FILE_SIZE_MAX - write_addr;
+	} else {
+		return 0;
+	}
 #else 
 	return 0;
 #endif		
@@ -212,3 +220,23 @@ uint32_t mtd_get_store()
 	return write_addr;
 }
 
+void mtd_shell(int argc, char *argv[])
+{
+	if(argc == 2) {
+		if(strcmp(argv[1],"status") == 0) {
+		#ifdef F3_EVO	
+			PRINT("total:\t%u\n", spi_flash_getGeometry());
+		#elif LINUX
+			PRINT("total:\t%u\n", MTD_FILE_SIZE_MAX);
+		#endif 			
+			PRINT("free:\t%u\n", mtd_get_space());
+			PRINT("occupy:\t%u\n", write_addr);
+			PRINT("full:\t%s\n", full? "yes":"no");
+
+			fifo_print(&write_fifo);
+
+			return;
+		}
+	}
+	cli_device_write("missing command: try 'status' ");
+}

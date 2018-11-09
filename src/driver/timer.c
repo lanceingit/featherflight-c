@@ -13,7 +13,9 @@
 #endif
 
 static volatile times_t timer_cnt = 0;
-
+#ifdef LINUX 
+static struct timespec boot_time;
+#endif
 
 void timer_init()
 {
@@ -42,6 +44,8 @@ void timer_init()
     TIM_ITConfig(TIM7, TIM_IT_Update, ENABLE);
     
     TIM_Cmd(TIM7, ENABLE);
+#elif LINUX
+    clock_gettime(CLOCK_MONOTONIC ,&boot_time);
 #endif    
 }
 
@@ -85,9 +89,9 @@ times_t timer_now()
 	return timer_cnt*10;
 #elif LINUX
     struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC,&now);
+    clock_gettime(CLOCK_MONOTONIC ,&now);
 
-    return (times_t)(now.tv_sec*1000000+now.tv_nsec / 1000);
+    return (times_t)((now.tv_sec-boot_time.tv_sec)*1000000+(now.tv_nsec-boot_time.tv_nsec) / 1000);
 #endif    
 }
 
@@ -112,6 +116,9 @@ float timer_get_dt(times_t* t, float max, float min)
 
 	if (dt > max) {
 		dt = max;
+	}
+	if (dt < min) {
+		dt = min;
 	}
     return dt;
 }

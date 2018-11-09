@@ -19,7 +19,6 @@
 
 #define LOG_FORMAT_MSG	  0x80
 
-#define LOG_PACKET_SIZE(_name)	LOG_PACKET_HEADER_LEN + sizeof(struct log_##_name##_s)
 
 
 

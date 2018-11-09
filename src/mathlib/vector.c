@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "vector.h"
 #include "mathlib.h"
-
+#include "debug.h"
 
 static Vector tmp0;
 
@@ -107,4 +107,9 @@ Vector vector_rotate(Vector v, Dcm d)
         tmp0.z += d[0][i] * v.z;
     }
     return tmp0;
+}
+
+void vector_print(char* name, Vector v)
+{
+    PRINT("%s:x:%f y:%f z:%f\n", name, v.x, v.y, v.z);
 }

@@ -120,8 +120,8 @@ void task_link(void)
 	}
 
     wwlink_recv(&wwmsg);    
-    // mavlink_stream();
-    // wwlink_stream();
+    mavlink_stream();
+    wwlink_stream();
 
     PERF_DEF(link_perf)
     perf_interval(&link_perf);
@@ -197,13 +197,13 @@ void task_log(void)
 
 void gyro_cal(void)         //TODO:put into sensor
 {
+    Vector gyro;
+    Vector gyro_sum;
+    Vector accel_start;
+    Vector accel_end;
+    Vector accel_diff;
+    
 	while(1) {
-		Vector gyro;
-		Vector gyro_sum;
-		Vector accel_start;
-		Vector accel_end;
-		Vector accel_diff;
-
 		imu_update(0);
 		imu_get_acc(0,&accel_start);
         gyro_sum = vector_set(0,0,0);
@@ -270,12 +270,12 @@ int main()
     task_init();
     sensor_init();
 
-    gyro_cal();
+    // gyro_cal();
 
     fifo_test();
 
     att_est_register(&att_est_q.heir);
-//    att_est_register(&att_est_cf.heir);
+    // att_est_register(&att_est_cf.heir);
     alt_est_register(&alt_est_3o.heir);
     est_init();
 
@@ -286,11 +286,11 @@ int main()
     task_create("baro", 25000, task_baro);
     task_create("att", 2000, task_att);
     task_create("alt", 2*1000, task_alt);
-    task_create("cmder", 2000, task_commander);
-    task_create("nav", 2000, task_navigator);
-    task_create("link", 2*1000, task_link);
-    task_create("cli", 100*1000, task_cli);
-    task_create("log", 20*1000, task_log);
+//    task_create("cmder", 2000, task_commander);
+//    task_create("nav", 2000, task_navigator);
+   task_create("link", 2*1000, task_link);
+//    task_create("cli", 100*1000, task_cli);
+   task_create("log", 10*1000, task_log);
 
     while(1) {
 
@@ -300,8 +300,10 @@ int main()
             scheduler_run();
         }
         times_t main_elapsed = timer_elapsed(&main_loop_time);
+
+        // PRINT("main loop:%3.3fms, elapsed:%3.3fms\n", dt*1000, main_elapsed/1000.0f);
 		if(main_elapsed>SYSTEM_CYCLE || dt>(0.001+SYSTEM_CYCLE/1e6)) {
-			PRINT("warning slow loop:%3.3fms, elapsed:%3.3fms", dt*1000, main_elapsed/1000.0f);
+			PRINT("warning slow loop:%3.3fms, elapsed:%3.3fms\n", dt*1000, main_elapsed/1000.0f);
 			main_elapsed = SYSTEM_CYCLE - 500;
 		}
 		usleep(SYSTEM_CYCLE - main_elapsed);        

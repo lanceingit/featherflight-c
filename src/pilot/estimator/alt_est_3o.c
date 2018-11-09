@@ -53,6 +53,8 @@ bool alt_est_3o_run(float dt)
     Vector acc;
     Dcm r;
 
+    // PRINT("dt:%f\n", dt);
+
     imu_get_acc(0, &acc);
     att_get_dcm(r);
     acc = rotation_ef(r, &acc);
@@ -62,11 +64,13 @@ bool alt_est_3o_run(float dt)
     //ned -> neu
     acc.z = -acc.z;
 
-    this->alt_err = baro_get_altitude_smooth(0) - (this->heir.alt + this->heir.ref_alt);
+    this->alt_err = (baro_get_altitude_smooth(0) - this->heir.ref_alt) - this->heir.alt;
 
-    this->acc_corr += this->alt_err * this->k3 * dt;
-    this->vel_corr = this->alt_err * this->k2 * dt;
     this->alt_corr += this->alt_err * this->k1 * dt;
+    this->vel_corr = this->alt_err * this->k2 * dt;
+
+    // PRINT("bias:%f corr:%f err:%f dt:%f\n", this->acc_corr, this->alt_err * this->k3 * dt, this->alt_err, dt);
+    this->acc_corr += this->alt_err * this->k3 * dt;
 
     this->heir.acc_neu_z = acc.z + this->acc_corr;
     this->heir.vel += this->vel_corr; 

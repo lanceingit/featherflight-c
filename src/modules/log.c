@@ -9,6 +9,10 @@
 #include <string.h>
 #include "debug.h"
 
+#define NAME_SIZE		5
+#define FORMAT_SIZE		16
+#define LABELS_SIZE		64
+
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
 
@@ -18,9 +22,9 @@ struct log_format_s
 {
 	uint8_t type;
 	uint8_t length;		// full packet length including header
-	char name[5];
-	char format[16];
-	char labels[64];
+	char name[NAME_SIZE];
+	char format[FORMAT_SIZE];
+	char labels[LABELS_SIZE];
 };
 
 struct log_s 
@@ -110,6 +114,8 @@ uint8_t log_alt_write(uint8_t id, uint16_t rate, void* p)
 		// .acc_vel;
 		.acc = alt_est_3o.heir.acc_neu_z,
 		.bias = alt_est_3o.acc_corr,
+		.alt_ref = alt_est_3o.heir.ref_alt,
+		.baro = baro_get_altitude_smooth(0) - alt_est_3o.heir.ref_alt,
     };
 	uint8_t len = sizeof(struct log_alt_s);
 	memcpy(p, &pkt, len);
@@ -120,10 +126,10 @@ uint8_t log_alt_write(uint8_t id, uint16_t rate, void* p)
 #include "log_messages.h"
 
 static struct log_s log[] = {
-	LOG_DEF(att, 250, "ffffffffffff",	"r,p,y,rsp,psp,ysp,rr,pr,yr,rrs,prs,yrs"),
-	LOG_DEF(imu, 250, "ffffffffffff", "AccX,AccY,AccZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ,tA,tG,tM"),
-	LOG_DEF(sens, 250, "fff", "BaroPres,BaroAlt,BaroTemp"),
-	LOG_DEF(alt, 250, "fffffffff","alt,vel,bp,bv,bc,ap,av,a,b"),
+	LOG_DEF(att, 50, "ffffffffffff",	"r,p,y,rsp,psp,ysp,rr,pr,yr,rrs,prs,yrs"),
+	LOG_DEF(imu, 100, "ffffffffffff", "AccX,AccY,AccZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ,tA,tG,tM"),
+	LOG_DEF(sens, 50, "fff", "BaroPres,BaroAlt,BaroTemp"),
+	LOG_DEF(alt, 50, "fffffffffff","alt,vel,bp,bv,bc,ap,av,a,b,ref,baro"),
 };
 
 static const unsigned log_num = sizeof(log) / sizeof(log[0]);
@@ -150,16 +156,29 @@ void log_init()
 	record = true;
 
 	struct {
-		LOG_PACKET_HEADER
+		uint8_t head1, head2, msg_type;
 		struct log_format_s body;
 	} log_msg_format = {
-		LOG_PACKET_HEADER_INIT(LOG_FORMAT_MSG),
+		.head1 = HEAD_BYTE1, 
+		.head2 = HEAD_BYTE2, 
+		.msg_type = LOG_FORMAT_MSG,
 	};
 
 	/* fill message format packet for each format and write it */
 	for (unsigned i = 0; i < log_num; i++) {
 		log[i].format.type = i;
 		log_msg_format.body = log[i].format;
+
+		log_msg_format.body.format[0] = 'I';
+		memcpy(&log_msg_format.body.format[1], log[i].format.format, FORMAT_SIZE-1);
+		log_msg_format.body.format[FORMAT_SIZE-1] = '\0';
+		
+		log_msg_format.body.labels[0] = 'M';
+		log_msg_format.body.labels[1] = 's';
+		log_msg_format.body.labels[2] = ',';
+		memcpy(&log_msg_format.body.labels[3], log[i].format.labels, LABELS_SIZE-3);
+		log_msg_format.body.labels[FORMAT_SIZE-1] = '\0';
+
 		log_write(&log_msg_format, sizeof(log_msg_format));
 	}
 }
@@ -176,6 +195,7 @@ uint16_t log_read(uint32_t offset, uint8_t* data, uint16_t len)
 
 void log_run(void)
 {
+	// if(timer_now() < 3*1000*1000) return; 
 	if(!mtd_is_full() && log_need_record()) {
 		for(uint8_t i=0; i<log_num; i++) {
 			if(log[i].rate != 0) {

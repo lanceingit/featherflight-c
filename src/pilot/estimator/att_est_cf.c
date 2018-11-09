@@ -28,6 +28,7 @@ bool att_est_cf_init(void)
     this->kp = 0.4f;
     this->ki = 0.001f;
     this->heir.inited = true;
+    this->heir.use_compass = false;
 
     return true;
 }

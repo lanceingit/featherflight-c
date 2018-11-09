@@ -13,7 +13,7 @@
 #include "debug.h"
 
 
-#define BUF_SIZE 4096
+#define BUF_SIZE 8096
 
 #ifdef F3_EVO
 enum mtd_status
@@ -85,17 +85,28 @@ void mtd_test()
 
 void mtd_write(uint8_t* data, uint16_t len)
 {
-	PRINT("space:%u len:%u ", mtd_get_space(), len);
+	// PRINT("space:%u len:%u ", mtd_get_space(), len);
 	if(mtd_get_space() > len) {
 		for(uint16_t i=0; i<len; i++) {
-			fifo_write(&write_fifo, data[i]);
+			int8_t ret = fifo_write(&write_fifo, data[i]);
+			if(ret < 0) {
+				// PRINT("mtd buf full\n");
+			}
 		}
 		full = false;
-		PRINT("free\n");
+		// PRINT("free\n");
 	} else {
 		full = true;
-		PRINT("full\n");
+		// PRINT("full\n");
 	}
+
+	// if(mtd_get_space() < 4000) {
+	// 	fifo_print(&write_fifo);
+	// }	
+	// if(mtd_get_space() < 21000 && mtd_get_space() > 15000) {
+	// 	PRINT("write");
+	// 	fifo_print(&write_fifo);
+	// }
 }
 
 uint16_t mtd_read(uint32_t offset, uint8_t* data, uint16_t len)
@@ -180,11 +191,20 @@ void mtd_sync()
 #elif LINUX
 	if(mtd_fd > 0) {
 		uint16_t len = fifo_get_count(&write_fifo);
+
 		if(len > BUF_SIZE-100) {
+		// if(mtd_get_space() < 200) {
+		// 	PRINT("read");
+		// 	fifo_print(&write_fifo);
+		// }
 			for(uint16_t i=0; i<len; i++) {
 				fifo_read(&write_fifo, &page_buf[i]);
 			}
 			write_addr += write(mtd_fd, page_buf, len);
+		// if(mtd_get_space() < 200) {
+		// 	PRINT("read end");
+		// 	fifo_print(&write_fifo);
+		// }
 		}
 
 		TIMER_DEF(last_sync_time)

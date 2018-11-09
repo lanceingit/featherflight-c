@@ -24,6 +24,7 @@ struct att_est_q_s att_est_q = {
 		.roll = 0.0f,
 		.pitch = 0.0f,
 		.yaw = 0.0f,
+		.use_compass = false,
 	},
 };
 
@@ -51,10 +52,13 @@ bool att_est_q_init(void)
     
     imu_get_acc(0, &this->heir.acc);
 
+	vector_print("acc", this->heir.acc);	
+
 	Vector k = vector_normalized(vector_reverse(this->heir.acc));
 
-	if (vector_length(this->heir.acc) < 0.01f || vector_length(this->heir.acc) > 12) {
+	if (vector_length(this->heir.acc) < 9 || vector_length(this->heir.acc) > 11) {
 		PRINT("init: degenerate accel!\n");
+		return false;
 	}
 
 	// 'i' is Earth X axis (North) unit vector in body frame, orthogonal with 'k'

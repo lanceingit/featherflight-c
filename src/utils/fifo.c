@@ -26,7 +26,7 @@ void fifo_f_create(struct fifo_f_s *fifo, float *buf, uint16_t size)
 
 int8_t fifo_f_write(struct fifo_f_s *fifo, float c)
 {
-    if(fifo->head + 1 == fifo->tail)
+    if(fifo->cnt == fifo->size)
     {
         return -1;
     }
@@ -34,6 +34,9 @@ int8_t fifo_f_write(struct fifo_f_s *fifo, float c)
     fifo->data[fifo->head] = c;
     fifo->head++;
     fifo->cnt++;
+    if(fifo->cnt > fifo->size) {
+        fifo->cnt = fifo->size;
+    }    
     if(fifo->head >= fifo->size)
     {
         fifo->head = 0;
@@ -44,26 +47,25 @@ int8_t fifo_f_write(struct fifo_f_s *fifo, float c)
 
 void fifo_f_write_force(struct fifo_f_s *fifo, float c)
 {  
-    if(fifo->head + 1 == fifo->tail)
-    {
-        fifo->tail = fifo->head;
-    }
     fifo->data[fifo->head] = c;
     fifo->head++;
     fifo->cnt++;
+    if(fifo->cnt > fifo->size) {
+        fifo->cnt = fifo->size;
+    }
     if(fifo->head >= fifo->size)
     {
         fifo->head = 0;
-        if(fifo->tail == 0)
-        {
-            fifo->tail = fifo->size -1;
-        }
     } 
+    if(fifo->cnt == fifo->size)
+    {
+        fifo->tail = fifo->head;
+    }
 }
 
 int8_t fifo_f_read(struct fifo_f_s *fifo, float* c)
 {
-    if(fifo->head == fifo->tail)
+    if(fifo->cnt == 0)
     {
         return -1;
     }
@@ -105,7 +107,7 @@ int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
     // PRINT("fifo_write");
     // fifo_print(fifo);
 
-    if(fifo->head + 1 == fifo->tail)
+    if(fifo->cnt == fifo->size)
     {
         return -1;
     }
@@ -113,6 +115,9 @@ int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
     fifo->data[fifo->head] = c;
     fifo->head++;
     fifo->cnt++;
+    if(fifo->cnt > fifo->size) {
+        fifo->cnt = fifo->size;
+    }
     if(fifo->head >= fifo->size)
     {
         fifo->head = 0;
@@ -123,21 +128,21 @@ int8_t fifo_write(struct fifo_s *fifo, uint8_t c)
 
 void fifo_write_force(struct fifo_s *fifo, uint8_t c)
 {  
-    if(fifo->head + 1 == fifo->tail)
-    {
-        fifo->tail = fifo->head;
-    }
     fifo->data[fifo->head] = c;
     fifo->head++;
     fifo->cnt++;
+    if(fifo->cnt > fifo->size) {
+        fifo->cnt = fifo->size;
+    }
     if(fifo->head >= fifo->size)
     {
         fifo->head = 0;
-        if(fifo->tail == 0)
-        {
-            fifo->tail = fifo->size -1;
-        }
     } 
+    if(fifo->cnt == fifo->size)
+    {
+        fifo->tail = fifo->head;
+    }
+
 }
 
 int8_t fifo_read(struct fifo_s *fifo, uint8_t* c)
@@ -145,9 +150,9 @@ int8_t fifo_read(struct fifo_s *fifo, uint8_t* c)
     // PRINT("fifo_read");
     // fifo_print(fifo);
 
-    if(fifo->head == fifo->tail)
+    if(fifo->cnt == 0)
     {
-        fifo->cnt = 0;
+        // fifo->cnt = 0;
         return -1;
     }
 

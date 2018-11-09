@@ -1,6 +1,6 @@
 {
 "ATT":{
-"ATT_BIAS_MAX":10.05,
+"ATT_BIAS_MAX":0.05,
 "ATT_W_ACCEL":0.2,
 "ATT_W_MAG":0.1,
 "ATT_W_GYRO_BIAS":0.1
@@ -33,7 +33,7 @@
 "CMDER_YAW_RATE_GAIN":2.5    
 },
 "ALT3O":{
-"ALT3O_TIME_CONS":5.0    
+"ALT3O_TIME_CONS":2.0    
 },
 "ALTI":{
 "ALTI_W_POS":0.4,    

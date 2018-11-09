@@ -21,3 +21,4 @@ Vector vector_normalized(Vector v);
 Vector vector_normalized_fast(Vector v);
 Vector vector_reverse(Vector v);
 Vector vector_rotate(Vector v, Dcm d);
+void vector_print(char* name, Vector v);

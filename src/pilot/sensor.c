@@ -302,6 +302,7 @@ void sensor_init(void)
 
 		if(imu[i]->init()) {
 			imu[i]->ready = true;   
+			imu_update(i);
 		} 
 	}
 	for(i=0; i<compass_cnt; i++) {

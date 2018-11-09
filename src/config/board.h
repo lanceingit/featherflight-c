@@ -24,9 +24,9 @@
 
 #elif LINUX
 
-#define SYSTEM_CYCLE              (2*1000)
+#define SYSTEM_CYCLE              (1000)
 
-#define MTD_FILE_SIZE_MAX (24*1024)
+#define MTD_FILE_SIZE_MAX (10*1024*1024)
 #define MTD_PATH "/tmp/file.mtd"
 
 

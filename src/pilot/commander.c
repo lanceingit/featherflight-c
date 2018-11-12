@@ -3,8 +3,10 @@
 #include "timer.h"
 #include "debug.h"
 #include <math.h>
-#include "param.h"
 #include "cmder_param.h"
+#include "trigger.h"
+#include "pilot.h"
+
 
 #define LEFT_STICK_LEFT			(1<<0)
 #define LEFT_STICK_H_CENTER	    (1<<1)
@@ -19,14 +21,19 @@
 #define RIGHT_STICK_V_CENTER	(1<<10)
 #define RIGHT_STICK_DOWN		(1<<11)
 
+#define STICK_LIMIT 0.8f
+#define STICK_DEADZONE 0.15f
+
 struct commander_s
 {
     bool armed;
     bool flying;
+    enum alt_scene_e alt_scene;
     uint8_t curr_controler;
     struct stick_s stick;
     float rp_gain;
     float yaw_rate_gain;
+    float vel_z_gain;
 };
 
 
@@ -42,6 +49,11 @@ struct commander_s* this = &commander;
 bool system_armed(void)
 {
     return this->armed;
+}
+
+enum alt_scene_e commader_get_alt_action(void)
+{
+    return this->alt_scene;
 }
 
 float commander_get_roll(void)
@@ -64,6 +76,11 @@ float commander_get_yaw(void)
 float commander_get_thrust(void)
 {
     return this->stick.thrust;
+}
+
+float commander_get_vel_z(void)
+{
+    return this->stick.thrust*this->vel_z_gain;
 }
 
 float commander_get_yaw_rate(void)
@@ -139,9 +156,6 @@ uint16_t stick_get_position(struct stick_s* s, float limit, float deadzone)
 
 bool check_stick_arm(void)
 {
-#define STICK_LIMIT 0.8f
-#define STICK_DEADZONE 0.15f
-
 #define WAIT_ARM_PRESS      0
 #define WAIT_ARM_RELEASE    1
 #define WAIT_DISARM_PRESS   2
@@ -207,20 +221,68 @@ void commander_init(void)
     PARAM_REGISTER(cmder);
     this->rp_gain = PARAM_GET(CMDER_RP_GAIN);
     this->yaw_rate_gain = PARAM_GET(CMDER_YAW_RATE_GAIN);
+    this->vel_z_gain = PARAM_GET(CMDER_VEL_Z_GAIN);
 }
 
 void commander_update(void)
-{
+{    
+    bool arm_status_change=false;
     bool armed;
     if(!this->flying) {
         armed = check_stick_arm();
         if(armed != this->armed) {
             PRINT("armd change %d->%d\n", this->armed, armed);
             this->armed = armed;
+            arm_status_change = true;
         }    
     }
 
-
-
-
+    TIMER_DEF(alt_smooth_time)
+    switch(this->alt_scene) {
+        case ALT_NORMAL:
+            if(arm_status_change) {
+                if(this->armed) {
+                    //在螺旋桨转起来前，设置气压计权重为0，关闭气压计融合。
+                    this->alt_scene = ALT_PRE_TAKEOFF;
+                }
+            }
+            if(this->stick.thrust > STICK_DEADZONE) {
+                //向上打杆。增加vel权重，加快权重转换。加速度对突然运动估计不准
+                this->alt_scene = ALT_MOVE_UP;
+                alt_smooth_time = timer_new(1.2e6);
+            } else if(this->stick.thrust < -STICK_DEADZONE) {
+                //向下打杆。增加vel权重，比上升更大，加快权重转换。
+                this->alt_scene = ALT_MOVE_DOWN;
+                alt_smooth_time = timer_new(1.2e6);
+            }
+            break;
+        case ALT_PRE_TAKEOFF:
+            //当气压计高度大于起飞前高度，设置为起飞模式
+            //pos，vel权重增加，得到一个准确值。同时减小bias权重，因为这时修正不准。
+            if(baro_get_altitude_smooth(0)-alt_est_get_ref_alt() > alt_est_get_terrain_offset()) {
+                this->alt_scene = ALT_TAKEOFF;
+            }              
+            break;
+        case ALT_TAKEOFF:
+//            if(navigator_get_mode() != NAV_TAKEOFF && poshold_get_mode() != POSHOLD_TAKEOFF) {
+            if(navigator_get_mode() != NAV_TAKEOFF) {
+                this->alt_scene = ALT_NORMAL;
+            }
+            break;
+        case ALT_MOVE_UP:
+        case ALT_MOVE_DOWN:
+            if(-STICK_DEADZONE < this->stick.thrust && this->stick.thrust < STICK_DEADZONE) {
+                this->alt_scene = ALT_NORMAL;
+            }
+            if(fabs(alt_est_get_vel()) > PARAM_GET(CMDER_VEL_HOLD_MAX) && 
+                (this->alt_scene == ALT_MOVE_UP||timer_is_timeout(&alt_smooth_time))){
+                //悬停不稳时，使用速度控制。能有效抑制上拉后掉高	
+                this->alt_scene = ALT_MOVE_UP;
+            } else if(!timer_is_timeout(&alt_smooth_time) > 0 && this->alt_scene == ALT_MOVE_DOWN) {
+                //悬停不稳时，使用位置控制，但对目标高度做平滑。能有效抑制下拉后回弹
+                this->alt_scene = ALT_MOVE_DOWN;
+            }        
+            break;
+        default:break;
+    }
 }

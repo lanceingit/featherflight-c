@@ -2,9 +2,8 @@
 
 #include "est.h"
 #include "timer.h"
-#include "sensor.h"
 #include "debug.h"
-#include "mathlib.h"
+#include "trigger.h"
 
 static struct att_est_s* est_att=NULL;
 static struct alt_est_s* est_alt=NULL;
@@ -98,6 +97,21 @@ float alt_est_get_vel(void)
 	return est_alt->vel;
 }
 
+float alt_est_get_ref_alt(void)
+{
+	return est_alt->ref_alt;
+}
+
+float alt_est_get_terrain_alt(void)
+{
+	return est_alt->alt - est_alt->terrain_offset;
+}
+
+float alt_est_get_terrain_offset(void)
+{
+	return est_alt->terrain_offset;
+}
+
 void est_init(void)
 {
 	att_init();
@@ -168,5 +182,24 @@ void est_alt_run(void)
 
 	float dt = timer_get_dt(&est_alt->heir.last_time, 0.02f, 0.001f);
 
+	TRIGGER_DEF(arm_trigger)
+	uint8_t arm_status = trigger_check(&arm_trigger, system_armed()); 
+	if(arm_status == TRIGGER_0_TO_1) {
+		est_alt->terrain_offset = est_alt->alt;
+		//在螺旋桨转起来前，设置气压计权重为0，关闭气压计融合。
+		est_alt->set_scene(ALT_PRE_TAKEOFF);
+	} else if(arm_status == TRIGGER_1_TO_0) {
+		est_alt->terrain_offset = est_alt->alt;
+	}
+
+	if(baro_get_altitude_smooth(0) > est_alt->terrain_offset && commader_get_alt_action() == ALT_TAKEOFF) {
+		//当气压计高度大于起飞前高度，设置为起飞模式
+		//pos，vel权重增加，得到一个准确值。同时减小bias权重，因为这时修正不准。
+		est_alt->set_scene(ALT_TAKEOFF);
+	} else {
+		est_alt->set_scene(ALT_NORMAL);
+	} 
+
 	est_alt->heir.run(dt);
+
 }

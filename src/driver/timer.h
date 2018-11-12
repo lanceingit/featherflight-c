@@ -16,7 +16,7 @@ void timer_init(void);
 void timer_disable(void);
 
 times_t timer_new(uint32_t us);
-bool timer_is_timeout(times_t t);
+bool timer_is_timeout(times_t* t);
 
 times_t timer_now(void);
 times_t timer_elapsed(times_t* t);

@@ -12,7 +12,7 @@ struct navigator_s
 };
 
 struct navigator_s navigator = {
-    .curr_mode = STOP,
+    .curr_mode = NAV_STOP,
     .nav_update = NULL,
 };
 
@@ -27,20 +27,23 @@ bool navigator_set_mode(enum nav_mode mode)
     }
 
     switch(mode) {
-        case STABILIZE:
+        case NAV_STABILIZE:
             if((ret=stabilize_init())) {
                 this->nav_update = stabilize_update;
             }
             break;
-        case ALTHOLD:
+        case NAV_ALTHOLD:
+            if((ret=althold_init())) {
+                this->nav_update = althold_update;
+            }
             break;
-        case POSHOLD:
+        case NAV_POSHOLD:
             break;
-        case TAKEOFF:
+        case NAV_TAKEOFF:
             break;
-        case LAND:      
+        case NAV_LAND:      
             break;
-        case STOP:        
+        case NAV_STOP:        
             break;
         default:break;
     }
@@ -50,6 +53,11 @@ bool navigator_set_mode(enum nav_mode mode)
     }
 
     return ret;    
+}
+
+enum nav_mode navigator_get_mode(void)
+{
+    return this->curr_mode;
 }
 
 void navigator_update(void)

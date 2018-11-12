@@ -136,6 +136,8 @@ def generate_param_add_h(directory, group, param):
 
     str = '''#pragma once
     
+#include "param.h" 
+
 static struct _params_local_s {\n'''
     f.write(str)
     

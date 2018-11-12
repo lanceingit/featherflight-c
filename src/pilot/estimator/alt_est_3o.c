@@ -1,11 +1,8 @@
 #include "board.h"
 #include <math.h>
 
-#include "sensor.h"
 #include "alt_est_3o.h"
 #include "debug.h"
-#include "param.h"
-#include "mathlib.h"
 #include "alt3o_param.h"
 
 

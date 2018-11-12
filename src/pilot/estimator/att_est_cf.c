@@ -2,7 +2,6 @@
 
 #include "att_est_cf.h"
 #include "mathlib.h"
-#include "sensor.h"
 #include "timer.h"
 #include <math.h>
 

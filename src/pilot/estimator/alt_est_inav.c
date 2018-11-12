@@ -1,10 +1,7 @@
 #include "board.h"
 
 #include "alt_est_inav.h"
-#include "mathlib.h"
-#include "sensor.h"
 #include "debug.h"
-#include "param.h"
 #include "alti_param.h"
 
 
@@ -14,6 +11,7 @@ struct alt_est_inav_s alt_est_inav = {
             .init = &alt_est_inav_init,
             .run = &alt_est_inav_run,
         },
+        .set_scene = &alt_est_inav_set_scene,
 	},
 };
 
@@ -21,6 +19,11 @@ static struct alt_est_inav_s* this=&alt_est_inav;
 
 void alt_est_inav_shell(int argc, char *argv[]);
 
+
+void alt_est_inav_set_scene(uint8_t scene)
+{
+    this->heir.scene = scene;
+}
 
 void alt_est_inav_reset(void)
 {
@@ -37,12 +40,12 @@ bool alt_est_inav_init(void)
 {
     PARAM_REGISTER(alti);
     cli_regist("alti", alt_est_inav_shell);
-    this->w_pos = PARAM_GET(ALTI_W_POS);
-    this->w_vel = PARAM_GET(ALTI_W_VEL);
-    this->w_bias = PARAM_GET(ALTI_W_BIAS);
-    this->w_c2bias = PARAM_GET(ALTI_W_C2BIAS);
-    this->w_baro_off = PARAM_GET(ALTI_W_BARO_OFF);
-    this->baro_check_vel = PARAM_GET(ALTI_BARO_CHECK_V);
+    this->w_pos = PARAM_GET(ALTI_W_POS_NORMAL);
+    this->w_vel = PARAM_GET(ALTI_W_VEL_NORMAL);
+    this->w_bias = PARAM_GET(ALTI_W_BIAS_NORMAL);
+    this->w_corr2bias = PARAM_GET(ALTI_W_C2BIAS_NORMAL);
+    this->w_baro_off = PARAM_GET(ALTI_W_BARO_OFF_NORMAL);
+    this->baro_check_vel = PARAM_GET(ALTI_BARO_CHECK_V_NORMAL);
     alt_est_inav_reset();
     this->heir.inited = true;
 
@@ -53,6 +56,31 @@ bool alt_est_inav_run(float dt)
 {
     Vector acc;
     Dcm r;
+
+    enum alt_scene_e scene = commader_get_alt_action(); 
+    if(scene == ALT_TAKEOFF) {
+        this->w_pos = PARAM_GET(ALTI_W_POS_TAKEOFF);
+        this->w_vel = PARAM_GET(ALTI_W_VEL_TAKEOFF);
+        this->w_bias = PARAM_GET(ALTI_W_BIAS_TAKEOFF);
+        this->w_corr2bias = PARAM_GET(ALTI_W_C2BIAS_TAKEOFF);
+        this->w_baro_off = PARAM_GET(ALTI_W_BARO_OFF_TAKEOFF);
+        this->baro_check_vel = PARAM_GET(ALTI_BARO_CHECK_V_TAKEOFF);
+    } else if(scene == ALT_PRE_TAKEOFF) {
+        this->w_pos = 0;
+        this->w_vel = 0;
+        this->w_bias = 0;
+        this->w_corr2bias = PARAM_GET(ALTI_W_C2BIAS_NORMAL);
+        this->w_baro_off = PARAM_GET(ALTI_W_BARO_OFF_NORMAL);
+        this->baro_check_vel = PARAM_GET(ALTI_BARO_CHECK_V_PRE_TAKEOFF);
+    } else {
+        this->w_pos = PARAM_GET(ALTI_W_POS_NORMAL);
+        this->w_vel = PARAM_GET(ALTI_W_VEL_NORMAL);
+        this->w_bias = PARAM_GET(ALTI_W_BIAS_NORMAL);
+        this->w_corr2bias = PARAM_GET(ALTI_W_C2BIAS_NORMAL);
+        this->w_baro_off = PARAM_GET(ALTI_W_BARO_OFF_NORMAL);
+        this->baro_check_vel = PARAM_GET(ALTI_BARO_CHECK_V_NORMAL);
+    }
+
 
     imu_get_acc(0, &acc);
     acc = vector_sub(acc, this->acc_bias);
@@ -79,7 +107,7 @@ bool alt_est_inav_run(float dt)
 
     this->acc_bias_corr.x = 0.0f;
     this->acc_bias_corr.y = 0.0f;
-    this->acc_bias_corr.z -= this->baro_corr * 0.1f;
+    this->acc_bias_corr.z -= this->baro_corr * this->w_corr2bias;
     if(!this->bias_inited) {
         this->acc_bias_corr.z = acc.z;
         this->bias_inited = true;

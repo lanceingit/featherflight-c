@@ -93,13 +93,13 @@ PROJ_OBJ += scheduler.o
 PROJ_OBJ += link_mavlink.o link_wwlink.o 
 
 #pilot
-PROJ_OBJ += est.o mixer.o commander.o att_control.o sensor.o navigator.o
+PROJ_OBJ += est.o mixer.o commander.o att_control.o sensor.o navigator.o alt_control.o
 
 #estimator
 PROJ_OBJ += att_est_q.o att_est_cf.o alt_est_3o.o alt_est_inav.o
 
 #navgator
-PROJ_OBJ += stabilize.o
+PROJ_OBJ += stabilize.o althold.o
 
 
 #mathlib

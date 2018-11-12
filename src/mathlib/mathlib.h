@@ -3,6 +3,8 @@
 #include "fifo.h"
 #include "dcm.h"
 #include "vector.h"
+#include "matrix.h"
+#include "quaternion.h"
 
 #ifndef M_PI
 #define M_PI			3.14159265

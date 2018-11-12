@@ -18,7 +18,6 @@
 #include "mavlink_log.h"
 #include "timer.h"
 #include "perf.h"
-#include "vector.h"
 #include "est.h"
 #include "scheduler.h"
 #include "mathlib.h"
@@ -276,7 +275,8 @@ int main()
 
     att_est_register(&att_est_q.heir);
     // att_est_register(&att_est_cf.heir);
-    alt_est_register(&alt_est_3o.heir);
+//    alt_est_register(&alt_est_3o.heir);
+    alt_est_register(&alt_est_inav.heir);
     est_init();
 
     variance_create(&baro_variance, 100);

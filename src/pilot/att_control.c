@@ -24,19 +24,19 @@ void att_control_init(void)
 	
 	pid_init(&rate_pid_roll, PARAM_GET(ATTC_RATE_ROLL_P),
                                 PARAM_GET(ATTC_RATE_ROLL_I),
-                                PARAM_GET(ATTC_RATE_ROLL_I),
+                                PARAM_GET(ATTC_RATE_ROLL_D),
                                 PARAM_GET(ATTC_RATE_RP_I_LIMIT),
                                 PARAM_GET(ATTC_RATE_RP_OUT_LIMIT),
                                 PARAM_GET(ATTC_RATE_RP_D_WEIGHT));
 	pid_init(&rate_pid_pitch, PARAM_GET(ATTC_RATE_PITCH_P),
                                 PARAM_GET(ATTC_RATE_PITCH_I),
-                                PARAM_GET(ATTC_RATE_PITCH_I),
+                                PARAM_GET(ATTC_RATE_PITCH_D),
                                 PARAM_GET(ATTC_RATE_RP_I_LIMIT),
                                 PARAM_GET(ATTC_RATE_RP_OUT_LIMIT),
                                 PARAM_GET(ATTC_RATE_RP_D_WEIGHT));
 	pid_init(&rate_pid_yaw, PARAM_GET(ATTC_RATE_YAW_P),
                                 PARAM_GET(ATTC_RATE_YAW_I),
-                                PARAM_GET(ATTC_RATE_YAW_I),
+                                PARAM_GET(ATTC_RATE_YAW_D),
                                 PARAM_GET(ATTC_RATE_YAW_I_LIMIT),
                                 PARAM_GET(ATTC_RATE_YAW_OUT_LIMIT),
                                 PARAM_GET(ATTC_RATE_YAW_D_WEIGHT));                                                                

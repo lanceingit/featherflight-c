@@ -1,10 +1,10 @@
 #pragma once
 
-#include "quaternion.h"
-#include "vector.h"
-#include "dcm.h"
+#include "mathlib.h"
+#include "sensor.h"
 #include "func_type.h"
 #include "timer.h"
+#include "commander.h"
 
 
 struct est_s
@@ -87,8 +87,12 @@ struct alt_est_s
 	float epv;
 	bool valid;
 
+    float terrain_offset;
+
 	float ref_alt;
     bool ref_inited;
+    set_val_func* set_scene;
+    enum alt_scene_e scene;
 };
 
 void att_est_register(struct att_est_s* est);
@@ -104,6 +108,12 @@ void att_get_dcm(Dcm r);
 void alt_est_register(struct alt_est_s* est);
 float alt_est_get_alt(void);
 float alt_est_get_vel(void);
+float alt_est_get_ref_alt(void);
+float alt_est_get_terrain_alt(void);
+float alt_est_get_terrain_offset(void);
+float alt_est_get_takeoff_alt(void);
+
+bool pos_est_valid(void);
 
 void est_init(void);
 void est_att_run(void);
@@ -112,3 +122,4 @@ void est_alt_run(void);
 #include "att_est_q.h"
 #include "att_est_cf.h"
 #include "alt_est_3o.h"
+#include "alt_est_inav.h"

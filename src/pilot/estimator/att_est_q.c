@@ -1,14 +1,9 @@
 #include "board.h"
 #include <math.h>
 
-#include "sensor.h"
 #include "att_est_q.h"
 #include "timer.h"
-#include "vector.h"
-#include "quaternion.h"
-#include "matrix.h"
 #include "lpf.h"
-#include "mathlib.h"
 #include "param.h"
 
 #include "att_param.h"

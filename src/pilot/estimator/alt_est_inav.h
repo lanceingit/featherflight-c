@@ -1,7 +1,6 @@
 #pragma once
 
 #include "est.h"
-#include "vector.h"
 
 struct alt_est_inav_s
 {
@@ -9,7 +8,7 @@ struct alt_est_inav_s
     float w_pos;
     float w_vel;
     float w_bias;
-    float w_c2bias;
+    float w_corr2bias;
     Vector acc_bias;
     Vector acc_bias_corr;
     float acc_alt;
@@ -26,3 +25,4 @@ extern struct alt_est_inav_s alt_est_inav;
 
 bool alt_est_inav_init(void);
 bool alt_est_inav_run(float dt);
+void alt_est_inav_set_scene(uint8_t scene);

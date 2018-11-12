@@ -71,9 +71,9 @@ times_t timer_new(uint32_t us)
 }
 
 
-bool timer_is_timeout(times_t t)
+bool timer_is_timeout(times_t* t)
 {
-    if(t >= timer_now())
+    if(*t >= timer_now())
     {
         return false;
     }
@@ -83,7 +83,7 @@ bool timer_is_timeout(times_t t)
     }
 }
 
-times_t timer_now()
+times_t timer_now(void)
 {
 #ifdef F3_EVO     
 	return timer_cnt*10;
@@ -128,7 +128,7 @@ void delay(float s)
     volatile times_t wait;
 
     wait = timer_new((uint32_t)(s*1000*1000));
-    while (!timer_is_timeout(wait));
+    while (!timer_is_timeout((times_t*)&wait));
 }
 
 void delay_ms(uint32_t ms)
@@ -136,7 +136,7 @@ void delay_ms(uint32_t ms)
     volatile times_t wait;
 
     wait = timer_new(ms*1000);
-    while (!timer_is_timeout(wait));
+    while (!timer_is_timeout((times_t*)&wait));
 }
 
 void delay_us(uint32_t us)
@@ -144,7 +144,7 @@ void delay_us(uint32_t us)
     volatile times_t wait;
 
     wait = timer_new(us);
-    while (!timer_is_timeout(wait));
+    while (!timer_is_timeout((times_t*)&wait));
 }
 
 #ifdef F3_EVO    
@@ -153,7 +153,7 @@ void sleep(float s)
     volatile times_t wait;
 
     wait = timer_new((uint32_t)(s*1000*1000));
-    while (!timer_is_timeout(wait));
+    while (!timer_is_timeout(&wait));
 }
 #endif
 
